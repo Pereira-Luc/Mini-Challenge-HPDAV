@@ -1,3 +1,4 @@
 minichallangeFlask/data/firewall/*.csv
 minichallangeFlask/data/intrusion-detection/*.csv
 data.zip
+__pycache__/
