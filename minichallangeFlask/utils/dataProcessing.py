@@ -2,6 +2,7 @@ import os
 import glob
 import pandas as pd
 
+# Global variables to cache the data
 firewall_data_cache = None
 intrusion_detection_data_cache = None
 
