@@ -23,7 +23,28 @@ Firewall Data:
     | Direction            | Inbound or Outbound          |
     | Connections built    | 0 or 1                       |
     | Connections torn down| 0 or 1                       |
+"""
+    
+# For consistency, the column names in the DataFrame should be:
+field_mapping_firewall = {
+        'Date/time': 'DateTime',
+        'Syslog priority': 'SyslogPriority',
+        'Operation': 'Operation',
+        'Message code': 'MessageCode',
+        'Protocol': 'Protocol',
+        'Source IP': 'SourceIP',
+        'Destination IP': 'DestinationIP',
+        'Source hostname': 'SourceHostname',
+        'Destination hostname': 'DestinationHostname',
+        'Source port': 'SourcePort',
+        'Destination port': 'DestinationPort',
+        'Destination service': 'DestinationService',
+        'Direction': 'Direction',
+        'Connections built': 'ConnectionsBuilt',
+        'Connections torn down': 'ConnectionsTornDown'
+    }
 
+"""
 Intrusion Detection Data:
     | Field          | Description             |
     |----------------|-------------------------|
@@ -65,6 +86,7 @@ def get_firewall_data(directory='./data/firewall/'):
 
     for file in csv_files:
         df = pd.read_csv(file, low_memory=False)
+        df.rename(columns=field_mapping_firewall, inplace=True)
         data_frames.append(df)
 
     if data_frames:
@@ -144,10 +166,10 @@ def get_firewall_data_by_datetime(start_datetime, end_datetime):
     df = get_firewall_data()
     
     # Convert to datetime because the data is a string in the CSV
-    if df['Date/time'].dtype != 'datetime64[ns]':
-        df['Date/time'] = pd.to_datetime(df['Date/time'], errors='coerce')
+    if df['DateTime'].dtype != 'datetime64[ns]':
+        df['DateTime'] = pd.to_datetime(df['DateTime'], errors='coerce')
     
-    mask = (df['Date/time'] >= pd.to_datetime(start_datetime)) & (df['Date/time'] <= pd.to_datetime(end_datetime))
+    mask = (df['DateTime'] >= pd.to_datetime(start_datetime)) & (df['DateTime'] <= pd.to_datetime(end_datetime))
     return df.loc[mask]
 
 def get_intrusion_detection_data_by_datetime(start_datetime, end_datetime):
