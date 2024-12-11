@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+from utils.dataProcessing import get_first_10_rows_firewall
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -14,6 +15,13 @@ def data_template():
     }
     return jsonify(data)
 
+print("Preloading data...")
+print(get_first_10_rows_firewall())
+print(get_first_10_rows_intrusion_detection())
+
+
+
 # Run the server
 if __name__ == '__main__':
     app.run(debug=True)
+    
