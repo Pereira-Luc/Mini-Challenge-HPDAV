@@ -130,3 +130,42 @@ def get_first_10_rows_intrusion_detection():
     df = get_intrusion_detection_data()
     return df.head(10)
 
+def get_firewall_data_by_datetime(start_datetime, end_datetime):
+    """
+    Retrieve firewall data within a specific datetime range.
+    
+    Parameters:
+    start_datetime (str or pd.Timestamp): Start datetime in 'YYYY-MM-DD HH:MM:SS' format.
+    end_datetime (str or pd.Timestamp): End datetime in 'YYYY-MM-DD HH:MM:SS' format.
+    
+    Returns:
+    pd.DataFrame: Filtered firewall data.
+    """
+    df = get_firewall_data()
+    
+    # Convert to datetime because the data is a string in the CSV
+    if df['Date/time'].dtype != 'datetime64[ns]':
+        df['Date/time'] = pd.to_datetime(df['Date/time'], errors='coerce')
+    
+    mask = (df['Date/time'] >= pd.to_datetime(start_datetime)) & (df['Date/time'] <= pd.to_datetime(end_datetime))
+    return df.loc[mask]
+
+def get_intrusion_detection_data_by_datetime(start_datetime, end_datetime):
+    """
+    Retrieve intrusion detection data within a specific datetime range.
+    
+    Parameters:
+    start_datetime (str or pd.Timestamp): Start datetime in 'YYYY-MM-DD HH:MM:SS' format.
+    end_datetime (str or pd.Timestamp): End datetime in 'YYYY-MM-DD HH:MM:SS' format.
+    
+    Returns:
+    pd.DataFrame: Filtered intrusion detection data.
+    """
+    df = get_intrusion_detection_data()
+    
+    # Convert to datetime because the data is a string in the CSV
+    if df['time'].dtype != 'datetime64[ns]':
+        df['time'] = pd.to_datetime(df['time'], errors='coerce')
+        
+    mask = (df['time'] >= pd.to_datetime(start_datetime)) & (df['time'] <= pd.to_datetime(end_datetime))
+    return df.loc[mask]
