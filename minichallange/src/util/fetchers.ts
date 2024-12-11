@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { FirewallData } from './interface';
+
+
 
 const getDataTemplate = async () => { 
     try {
@@ -18,7 +21,12 @@ const getFirewallDataByDateTimeRange = async (start: string, end: string) => {
                 end_datetime: end 
             }
         });
-        return response.data;
+
+        const processedData: FirewallData[] = response.data.map((item: any) => ({
+            ...item,
+            DateTime: new Date(item.DateTime),
+        }));
+        return processedData;
     } catch (error) {
         console.error("Error fetching data:", error);
         throw error;
