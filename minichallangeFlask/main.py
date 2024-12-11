@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from utils.dataProcessing import get_first_10_rows_firewall
+from utils.dataProcessing import get_first_10_rows_firewall, get_first_10_rows_intrusion_detection
 
 # Initialize Flask app
 app = Flask(__name__)
