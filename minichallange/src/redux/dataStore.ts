@@ -1,8 +1,12 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
+import exampleReducer from "./DataSetSlice";
+
+
+
 
 const store = configureStore({
     reducer: {
-        // DATA GOES HERE
+        example: exampleReducer,
     },
 });
     

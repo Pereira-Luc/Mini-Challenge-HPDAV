@@ -1,0 +1,14 @@
+Frontend:
+ cd minichallenge
+ npm install
+ npm run dev
+
+
+
+
+Backend:
+ cd minichallengeFlask
+ First time: 
+  pip install flask
+  pip install flask_cors
+ py main.py

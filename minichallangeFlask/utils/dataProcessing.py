@@ -44,6 +44,21 @@ field_mapping_firewall = {
         'Connections torn down': 'ConnectionsTornDown'
     }
 
+field_mapping_ids = {
+    'time': 'DateTime',
+    'Source IP': 'SourceIP',
+    'Source port': 'SourcePort',
+    'Destination IP': 'DestinationIP',
+    'Destination port': 'DestinationPort',
+    'Classification': 'Classification',
+    'Priority': 'Priority',
+    'Label': 'Label',
+    'Packet info': 'PacketInfo',
+    'Packet info cont’d': 'PacketInfoContd',
+    'XRef': 'XRef',
+}
+
+
 """
 Intrusion Detection Data:
     | Field          | Description             |
@@ -116,6 +131,7 @@ def get_intrusion_detection_data(directory='./data/intrusion-detection/'):
 
     for file in csv_files:
         df = pd.read_csv(file, low_memory=False)
+        df.rename(columns=field_mapping_ids, inplace=True)
         data_frames.append(df)
 
     if data_frames:
@@ -186,8 +202,8 @@ def get_intrusion_detection_data_by_datetime(start_datetime, end_datetime):
     df = get_intrusion_detection_data()
     
     # Convert to datetime because the data is a string in the CSV
-    if df['time'].dtype != 'datetime64[ns]':
-        df['time'] = pd.to_datetime(df['time'], errors='coerce')
+    if df['DateTime'].dtype != 'datetime64[ns]':
+        df['DateTime'] = pd.to_datetime(df['DateTime'], errors='coerce')
         
-    mask = (df['time'] >= pd.to_datetime(start_datetime)) & (df['time'] <= pd.to_datetime(end_datetime))
+    mask = (df['DateTime'] >= pd.to_datetime(start_datetime)) & (df['DateTime'] <= pd.to_datetime(end_datetime))
     return df.loc[mask]
