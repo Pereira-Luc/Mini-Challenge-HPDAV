@@ -80,6 +80,8 @@ const getMergedDataByDateTimeRange = async (start: string, end: string): Promise
             getFirewallDataByDateTimeRange(start, end),
             getIDSDataByDateTimeRange(start, end),
         ]);
+        console.log(`Firewall data records: ${firewallData.length}`);
+        console.log(`IDS data records: ${idsData.length}`);
 
         const mergedData: MergedData[] = firewallData.map((firewall) => {
             const matchingIDS = idsData.find(
@@ -93,26 +95,27 @@ const getMergedDataByDateTimeRange = async (start: string, end: string): Promise
                 DateTime: firewall.DateTime,
                 SourceIP: firewall.SourceIP,
                 DestinationIP: firewall.DestinationIP,
-                DestinationService: firewall.DestinationService,
-                Direction: firewall.Direction,
-                ConnectionsBuilt: firewall.ConnectionsBuilt,
-                ConnectionsTornDown: firewall.ConnectionsTornDown,
-                Protocol: firewall.Protocol,
-                SyslogPriority: firewall.SyslogPriority || null,
-                Operation: firewall.Operation,
-                MessageCode: firewall.MessageCode || null,
-                Classification: matchingIDS?.Classification || null,
-                Priority: matchingIDS?.Priority || null,
-                Label: matchingIDS?.Label || null,
-                PacketInfo: matchingIDS?.PacketInfo || null,
-                PacketInfoContd: matchingIDS?.PacketInfoContd || null,
-                XRef: matchingIDS?.XRef || null,
-                SourceHostname: firewall.SourceHostname,
-                DestinationHostname: firewall.DestinationHostname,
+                DestinationService: firewall.DestinationService || "",
+                Direction: firewall.Direction || "",
+                ConnectionsBuilt: firewall.ConnectionsBuilt || "",
+                ConnectionsTornDown: firewall.ConnectionsTornDown || "",
+                Protocol: firewall.Protocol || "TCP",
+                SyslogPriority: firewall.SyslogPriority || "",
+                Operation: firewall.Operation || "",
+                MessageCode: firewall.MessageCode || "",
+                Classification: matchingIDS?.Classification || "Unclassified", // Default value
+                Priority: matchingIDS?.Priority || 0, // Default numeric value
+                Label: matchingIDS?.Label || "Unknown", // Default value
+                PacketInfo: matchingIDS?.PacketInfo || "",
+                PacketInfoContd: matchingIDS?.PacketInfoContd || "",
+                XRef: matchingIDS?.XRef || "",
+                SourceHostname: firewall.SourceHostname || "",
+                DestinationHostname: firewall.DestinationHostname || "",
                 SourcePort: matchingIDS?.SourcePort || firewall.SourcePort,
                 DestinationPort: matchingIDS?.DestinationPort || firewall.DestinationPort,
             };
         });
+        console.log(`Merged data records: ${mergedData.length}`);
 
         return mergedData;
     } catch (error) {
@@ -120,6 +123,9 @@ const getMergedDataByDateTimeRange = async (start: string, end: string): Promise
         throw error;
     }
 };
+
+
+
 
 
 export { getDataTemplate, getFirewallDataByDateTimeRange, getMergedDataByDateTimeRange, fetchFirewallData, fetchDataTemplate};

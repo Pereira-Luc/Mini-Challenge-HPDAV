@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from utils.dataProcessing import get_first_10_rows_firewall, get_first_10_rows_intrusion_detection, get_firewall_data_by_datetime,  get_intrusion_detection_data_by_datetime 
+from utils.dataProcessing import get_aggregated_data_by_ip_and_port, get_first_10_rows_firewall, get_first_10_rows_intrusion_detection, get_firewall_data_by_datetime,  get_intrusion_detection_data_by_datetime 
 
 
 # Initialize Flask app
@@ -76,6 +76,27 @@ def ids_data_by_date_time():
         return jsonify({"error": f"Invalid datetime format: {str(ve)}"}), 400
     except KeyError as ke:
         return jsonify({"error": f"Missing expected key: {str(ke)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+
+@app.route('/paginatedData', methods=['GET'])
+def paginated_data():
+    start_datetime = request.args.get('start')
+    end_datetime = request.args.get('end')
+    limit = int(request.args.get('limit', 100))  # Default to 100
+    offset = int(request.args.get('offset', 0))  # Default to 0
+
+    if not start_datetime or not end_datetime:
+        return jsonify({"error": "Missing 'start' or 'end' query parameters"}), 400
+
+    try:
+        data = get_aggregated_data_by_ip_and_port(start_datetime, end_datetime)
+
+        # Paginate the data
+        paginated_data = data.iloc[offset:offset + limit]
+
+        return paginated_data.to_json(orient='records', date_format='iso'), 200
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 

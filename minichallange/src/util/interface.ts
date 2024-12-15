@@ -28,7 +28,7 @@ export interface IDSData {
     Label: string;                  // IDS rule label, e.g., "[1:2100538:17]"
     PacketInfo: string;             // Packet details, e.g., "TCP TTL:128 TOS:0x0"
     PacketInfoContd: string;        // Additional packet details
-    XRef: string | null;            // Cross-reference URL or null if not present
+    XRef: string;            // Cross-reference URL or null if not present
 }
 
 export interface MergedData {
@@ -40,15 +40,15 @@ export interface MergedData {
     ConnectionsBuilt: string;       // "0" or "1"
     ConnectionsTornDown: string;    // "0" or "1"
     Protocol: string;               // From FirewallData
-    SyslogPriority: string | null;  // From FirewallData
+    SyslogPriority: string;  // From FirewallData
     Operation: string;              // From FirewallData
-    MessageCode: string | null;     // From FirewallData
+    MessageCode: string ;     // From FirewallData
     Classification: string;  // From IDSLog
-    Priority: number | null;        // From IDSLog
-    Label: string | null;           // From IDSLog
-    PacketInfo: string | null;      // From IDSLog
-    PacketInfoContd: string | null; // From IDSLog
-    XRef: string | null;            // From IDSLog
+    Priority: number ;        // From IDSLog
+    Label: string ;           // From IDSLog
+    PacketInfo: string ;      // From IDSLog
+    PacketInfoContd: string ; // From IDSLog
+    XRef: string ;            // From IDSLog
     SourceHostname: string;         // Hostname or empty string
     DestinationHostname: string;    // Hostname or empty string
     SourcePort: string | number;    // From FirewallData (string) or IDSLog (number)
