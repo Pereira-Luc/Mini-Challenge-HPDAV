@@ -19,20 +19,26 @@ def data_template():
 def firewall_data_by_date_time():
     start_datetime = request.args.get('start_datetime')
     end_datetime = request.args.get('end_datetime')
+    aggregation = request.args.get('aggregation')
 
     if not start_datetime or not end_datetime:
         return jsonify({"error": "Please provide start_datetime and end_datetime query parameters in 'YYYY-MM-DD HH:MM:SS' format"}), 400
 
     try:
+        if aggregation:
+            data = get_firewall_data_by_datetime(start_datetime, end_datetime).resample(aggregation, on='DateTime').count()
         data = get_firewall_data_by_datetime(start_datetime, end_datetime)
         return data.to_json(orient='records', date_format='iso'), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+    
 
 print("Preloading data...")
 print(get_first_10_rows_firewall())
 print(get_first_10_rows_intrusion_detection())
+print("Data preloaded!")
+
+
 
 
 
