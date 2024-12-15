@@ -17,6 +17,7 @@ export interface FirewallData {
 }
 
 export interface IDSData {
+    destIP: string;
     DateTime: string;                   // Format: "2024-12-01T12:00:00"
     SourceIP: string;               // Source IPv4 address
     SourcePort: number;             // Source port, e.g., 443
@@ -42,7 +43,7 @@ export interface MergedData {
     SyslogPriority: string | null;  // From FirewallData
     Operation: string;              // From FirewallData
     MessageCode: string | null;     // From FirewallData
-    Classification: string | null;  // From IDSLog
+    Classification: string;  // From IDSLog
     Priority: number | null;        // From IDSLog
     Label: string | null;           // From IDSLog
     PacketInfo: string | null;      // From IDSLog
