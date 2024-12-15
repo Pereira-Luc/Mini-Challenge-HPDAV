@@ -17,3 +17,34 @@ Backend:
   First time: 
   pip install flask
   pip install flask_cors
+
+
+  Insights:
+
+
+There is too much data.
+
+Use a Web worker to do the animation so it doesnt block main thread ui.
+
+use Canvas instead of SVG rendering due to sheer amount of data to be rendered.
+
+
+Aggregate Connections by source ip destination IP and Port to combine multiple connectiosn into summary statistics. 
+
+Also time based aggregation: Combine connections happening within a small time interval (eg. 1 minute) into a singel record. 
+
+Add Level of Detail ( Gradually add more details when zoomed in)
+High Zoom: Show labels, detailed connections, and fine visualization.
+
+5. Optimize Force-Directed Simulation
+Tweak D3's force simulation parameters to balance performance and usability:
+
+Increase the link distance to reduce clustering.
+Reduce the simulation iterations for large datasets.
+Throttle simulation updates using requestAnimationFrame
+
+6. Lazy Loading or Pagination
+Break the dataset into chunks and load/render nodes and links progressively instead of all at once:
+
+Load 100-200 nodes initially.
+Allow users to load more data dynamically as they explore.

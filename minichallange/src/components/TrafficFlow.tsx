@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { getMergedDataByDateTimeRange } from "../util/fetchers";
 import { MergedData } from "../util/interface";
 import TrafficFlowVisualization from "./TrafficFlowVisualization";
+import Filters from "./filters";
+import DaySelector from "./DaySelector";
+import TimeIntervalControls from "./TimeIntervalControls";
 
 const MIN_TIME = new Date("2012-04-05T17:51:26");
 const MAX_TIME = new Date("2012-04-07T09:00:04");
@@ -168,105 +171,28 @@ const TrafficFlow = () => {
             <h1>Dynamic Traffic Flow</h1>
 
             <div style = {{ marginBottom: "20px" }}>
-            <h3>Filters</h3>
-            <label>Protocol: </label>
-                <select onChange={(e) => handleFilterChange("protocol", e.target.value)}>
-                    <option value="">All</option>
-                    {uniqueValues.protocol.map((protocol) => (
-                        <option key={protocol} value={protocol}>
-                            {protocol}
-                        </option>
-                    ))}
-                </select>
-
-                <label>Source Port: </label>
-                <select onChange={(e) => handleFilterChange("sourcePort", e.target.value)}>
-                    <option value="">All</option>
-                    {uniqueValues.sourcePort.map((port) => (
-                        <option key={port} value={port}>
-                            {port}
-                        </option>
-                    ))}
-                </select>
-
-                <label>Destination Port: </label>
-                <select onChange={(e) => handleFilterChange("destinationPort", e.target.value)}>
-                    <option value="">All</option>
-                    {uniqueValues.destinationPort.map((port) => (
-                        <option key={port} value={port}>
-                            {port}
-                        </option>
-                    ))}
-                </select>
-
-                <label>Priority: </label>
-                <select onChange={(e) => handleFilterChange("priority", e.target.value)}>
-                    <option value="">All</option>
-                    {uniqueValues.priority.map((priority) => (
-                        <option key={priority} value={priority}>
-                            {priority}
-                        </option>
-                    ))}
-                </select>
-
-                <label>Classification: </label>
-                <select onChange={(e) => handleFilterChange("classification", e.target.value)}>
-                    <option value="">All</option>
-                    {uniqueValues.classification.map((classification) => (
-                        <option key={classification} value={classification}>
-                            {classification}
-                        </option>
-                    ))}
-                </select>
-                <label>
-                    IP Address:
-                    <input
-                        type="text"
-                        placeholder="e.g., 192.168.1.1"
-                        onChange={(e) => handleFilterChange("ipAddress", e.target.value)}
-                    />
-                </label>
-                <button
-                    onClick={() => {
-                        console.log("Button Clicked - Current Filters:", selectedFilters); // Log current filters
-                        applyFilters(selectedFilters)
-                    }}
-                    style={{ marginLeft: "10px", padding: "5px 10px" }}
-                >
-                    Apply Filters
-                </button>
+            {/* Filters Component */}
+            <Filters
+                uniqueValues={uniqueValues}
+                onFilterChange={handleFilterChange}
+                onApplyFilters={applyFilters}
+                selectedFilters={selectedFilters}
+            />   
             </div>
-            {/* Dropdown for Day Selection */}
-            <div style={{ marginBottom: "20px" }}>
-                <label htmlFor="day-select">Select Day: </label>
-                <select id="day-select" value={selectedDay} onChange={(e) => handleDayChange(e.target.value)}>
-                    {days.map((day) => (
-                        <option key={day} value={day}>
-                            {day}
-                        </option>
-                    ))}
-                </select>
-            </div>
+            <DaySelector
+                selectedDay={selectedDay}
+                days={days}
+                onDayChange={handleDayChange}
+            />
 
-            {/* Available Time Frame for Selected Day */}
-            <div style={{ marginBottom: "20px" }}>
-                <strong>Available Time:</strong>{" "}
-                {new Date(startTime).toLocaleTimeString()} - {new Date(endTime).toLocaleTimeString()}
-            </div>
 
-            {/* Controls for Time Interval */}
-            <div style={{ marginBottom: "20px" }}>
-                <button onClick={() => handleTimeIntervalChange("backward")} disabled={isAtStart}>
-                    ◀ Previous Interval
-                </button>
-                <span style={{ margin: "0 10px" }}>
-                    {new Date(startTime).toLocaleTimeString()} - {new Date(endTime).toLocaleTimeString()}
-                </span>
-                <button onClick={() => handleTimeIntervalChange("forward")} disabled={isAtEnd}>
-                    Next Interval ▶
-                </button>
-            </div>
-
+            <TimeIntervalControls
+                startTime={startTime}
+                endTime={endTime}
+                isAtStart={isAtStart}
+                isAtEnd={isAtEnd}
+                onIntervalChange={handleTimeIntervalChange}
+            />
             {/* Slider for Interval Size */}
             <div style={{ marginBottom: "20px" }}>
                 <label htmlFor="intervalSize">Interval Size (minutes): </label>
