@@ -18,8 +18,8 @@ def data_template():
 
 @app.route('/firewallDataByDateTime', methods=['GET'])
 def firewall_data_by_date_time():
-    start_datetime = request.args.get('start_datetime')
-    end_datetime = request.args.get('end_datetime')
+    start_datetime = request.args.get('start')
+    end_datetime = request.args.get('end')
 
     if not start_datetime or not end_datetime:
         return jsonify({

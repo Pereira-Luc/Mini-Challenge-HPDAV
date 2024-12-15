@@ -44,8 +44,8 @@ const getFirewallDataByDateTimeRange = async (start: string, end: string) => {
     try {
         const response = await axios.get('http://127.0.0.1:5000/firewallDataByDateTime', {
             params: { 
-                start_datetime: start, 
-                end_datetime: end 
+                start: start, 
+                end: end 
             }
         });
 

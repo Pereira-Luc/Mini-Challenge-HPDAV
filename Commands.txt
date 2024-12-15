@@ -1,14 +1,19 @@
 Frontend:
- cd minichallenge
- npm install
+
+ cd .\minichallenge\
  npm run dev
 
+first time only:
+ npm install
 
 
 
 Backend:
- cd minichallengeFlask
- First time: 
+ cd .\minichallengeFlask\
+ py main.py
+
+
+
+  First time: 
   pip install flask
   pip install flask_cors
- py main.py
