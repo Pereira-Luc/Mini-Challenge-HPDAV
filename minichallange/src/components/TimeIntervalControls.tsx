@@ -29,6 +29,7 @@ const TimeIntervalControls: React.FC<TimeIntervalControlsProps> = ({
 }) => {
     const [editedStartTime, setEditedStartTime] = useState(extractTime(startTime));
     const [editedEndTime, setEditedEndTime] = useState(extractTime(endTime));
+    const [intervalSize, setIntervalSize] = useState<number>(5);
 
     // Update local state when props change
     useEffect(() => {
@@ -39,13 +40,13 @@ const TimeIntervalControls: React.FC<TimeIntervalControlsProps> = ({
     const handleStartTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newStartTime = event.target.value;
         setEditedStartTime(newStartTime);
-        onTimeChange(newStartTime, editedEndTime);
+        //onTimeChange(newStartTime, editedEndTime);
     };
 
     const handleEndTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newEndTime = event.target.value;
         setEditedEndTime(newEndTime);
-        onTimeChange(editedStartTime, newEndTime);
+        //onTimeChange(editedStartTime, newEndTime);
     };
 
     return (
@@ -74,6 +75,19 @@ const TimeIntervalControls: React.FC<TimeIntervalControlsProps> = ({
             <button onClick={() => onIntervalChange("forward")} disabled={isAtEnd}>
                 Next Interval ▶
             </button>
+            {/* Slider for Interval Size */}
+            <div style={{ marginBottom: "20px" }}>
+                <label htmlFor="intervalSize">Interval Size (minutes): </label>
+                <input
+                    type="range"
+                    id="intervalSize"
+                    min="1"
+                    max="60"
+                    value={intervalSize}
+                    onChange={(e) => setIntervalSize(Number(e.target.value))}
+                />
+                <span>{intervalSize} minutes</span>
+            </div>
         </div>
     );
 };
