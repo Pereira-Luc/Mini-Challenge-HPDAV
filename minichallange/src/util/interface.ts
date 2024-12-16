@@ -22,7 +22,7 @@ export interface IDSData {
     SourceIP: string;               // Source IPv4 address
     SourcePort: number;             // Source port, e.g., 443
     DestinationIP: string;                 // Destination IPv4 address
-    DestinationPort: number;               // Destination port, e.g., 80
+    DestinationPort: string;               // Destination port, e.g., 80
     Classification: string;         // Example: "Malware Traffic", "DoS Attempt"
     Priority: number;               // Priority level: 1 (high), 2 (medium), etc.
     Label: string;                  // IDS rule label, e.g., "[1:2100538:17]"
@@ -32,10 +32,10 @@ export interface IDSData {
 }
 
 export interface MergedData {
-    Betweenness: any;
-    Eigenvector: any;
-    Degree: any;
-    Closeness: any;
+    Betweenness?: any;
+    Eigenvector?: any;
+    Degree?: any;
+    Closeness?: any;
     DateTime: Date;                 // From FirewallData
     SourceIP: string;               // Shared between IDS and firewall
     DestinationIP: string;          // Shared between IDS and firewall
@@ -62,7 +62,11 @@ export interface MergedData {
 export interface ParallelCoordinatesPlotProps {
     width: number;
     height: number;
-    startDate: string;
-    endDate: string;
-    timeWindow?: { start: Date; end: Date };
+    timeWindow?: TimeWindow;
+    mgData?: FirewallData[] | IDSData[];
+}
+
+export interface TimeWindow {
+    start: string;
+    end: string;
 }
