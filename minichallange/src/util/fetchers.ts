@@ -160,6 +160,7 @@ const getMergedDataByDateTimeRange = async (start: string, end: string): Promise
     }
 };
 
+
 export {
     getDataTemplate,
     getFirewallDataByDateTimeRange,
@@ -168,3 +169,4 @@ export {
     fetchFirewallData,
     fetchDataTemplate,
 };
+
