@@ -5,14 +5,16 @@ import {
   getFirewallDataByDateTimeRange,
 } from "./util/fetchers";
 import "./App.css";
-import TrafficFlowIDS from "./components/TrafficFlowIDS";
-import TrafficFlowFirewall from "./components/TrafficFlowFirewall";
 import Filters from "./components/filters";
 import DaySelector from "./components/DaySelector";
 import TimeIntervalControls from "./components/TimeIntervalControls";
-import { FirewallData, IDSData } from "./util/interface";
-import TrafficFlowVisualizationIDS from "./components/TrafficFlowVisualizationIDS";
-import TrafficFlowVisualizationFirewall from "./components/TrafficFlowVisualizationFirewall";
+import { FirewallData, IDSData, TimeWindow } from "./util/interface";
+import ParallelCoordinatesPlot from "./components/ParallelCoordinatesPlot";
+
+enum GraphType {
+  ParallelCoordinatesPlot = "ParallelCoordinatesPlot",
+  TraficFlow = "TraficFlow",
+}
 
 
 const MIN_TIME = new Date("2012-04-05T17:51:26");
@@ -53,7 +55,7 @@ function App() {
   const [idsData, setIDSData] = useState<IDSData[]>([]);
   const [filteredIDSData, setFilteredIDSData] = useState<IDSData[]>([]);
   const [selectedIDSFilters, setSelectedIDSFilters] = useState(initialIDSFilters);
-  //const [timeWindow, setTimeWindow] = useState<TimeWindow>({ start: startTime, end: endTime });
+  
   const [uniqueIDSValues, setUniqueIDSValues] = useState({
     sourcePort: [] as string[],
     destinationPort: [] as string[],
@@ -72,11 +74,15 @@ function App() {
     destinationPort: [] as string[],
   });
 
+  const [displayedGraph, setDisplayedGraph] = useState(GraphType.ParallelCoordinatesPlot);
+  
+
   // Date and Time States
   const [selectedDay, setSelectedDay] = useState<string>(formatDate(MIN_TIME));
   const [startTime, setStartTime] = useState<string>("2012-04-05T17:51:26");
   const [endTime, setEndTime] = useState<string>("2012-04-05T18:00:00");
   const [intervalSize, setIntervalSize] = useState<number>(5);
+  const [timeWindow, setTimeWindow] = useState<TimeWindow>({ start: startTime, end: endTime });
 
   // Fetch IDS Data
   const fetchIDSData = async (start: string, end: string) => {
@@ -173,6 +179,7 @@ const applyIDSFilters = () => {
 
   // Handle Time Interval Change
   const handleTimeIntervalChange = (direction: "forward" | "backward") => {
+    console.log("Changing Time Interval:", direction);
     const start = new Date(startTime);
     const intervalInMs = intervalSize * 60 * 1000;
     const newStart = new Date(
@@ -223,21 +230,40 @@ const applyIDSFilters = () => {
         isAtStart={startTime === formatDateToISO(MIN_TIME)}
         isAtEnd={endTime === formatDateToISO(MAX_TIME)}
         onIntervalChange={handleTimeIntervalChange}
+        changeItervalSize={setIntervalSize}
         onAcceptTime={handleAcceptTime}
-        onTimeChange={(newStartTime, newEndTime) => {
-          setStartTime(newStartTime);
-          setEndTime(newEndTime);
-        } } />
+      />
+      
+      <div>
+        <select 
+          value={displayedGraph} 
+          onChange={(e) => setDisplayedGraph(e.target.value as GraphType)}
+          style={{ marginBottom: "20px" }}
+        >
+          <option value={GraphType.ParallelCoordinatesPlot}>Parallel Coordinates</option>
+          <option value={GraphType.TraficFlow}>Traffic Flow</option>
+        </select>
 
-      <div className="container">
-        <div className="child">
-          <TrafficFlowVisualizationIDS data={filteredIDSData} filter={null}/>
+        <div className="container">
+          {displayedGraph === GraphType.ParallelCoordinatesPlot ? (
+            <>
+              <div className="child">
+                <ParallelCoordinatesPlot width={800} height={400} timeWindow={timeWindow} mgData={filteredIDSData} />
+              </div>
+              <div className="child">
+                <ParallelCoordinatesPlot width={800} height={400} timeWindow={timeWindow} mgData={filteredFirewallData} />
+              </div>
+            </>
+          ) : (
+            <div className="child">
+              {/* Add your Traffic Flow component here */}
+              <div>Traffic Flow View (To be implemented)</div>
+            </div>
+          )}
         </div>
-        <div className="child">
-          <TrafficFlowVisualizationFirewall data={filteredFirewallData} filter={null}/>
-        </div>
-      </div>
+      </div>  
     </div>
   );
 }
+
 export default App;
