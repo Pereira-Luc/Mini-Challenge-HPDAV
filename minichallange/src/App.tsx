@@ -11,6 +11,10 @@ import TimeIntervalControls from "./components/TimeIntervalControls";
 import { FirewallData, IDSData, TimeWindow } from "./util/interface";
 import ParallelCoordinatesPlot from "./components/ParallelCoordinatesPlot";
 
+import TrafficFlowVisualizationIDS from "./components/TrafficFlowVisualizationIDS";
+import TrafficFlowVisualizationFirewall from "./components/TrafficFlowVisualizationFirewall"
+
+
 enum GraphType {
   ParallelCoordinatesPlot = "ParallelCoordinatesPlot",
   TraficFlow = "TraficFlow",
@@ -74,7 +78,7 @@ function App() {
     destinationPort: [] as string[],
   });
 
-  const [displayedGraph, setDisplayedGraph] = useState(GraphType.ParallelCoordinatesPlot);
+  const [displayedGraph, setDisplayedGraph] = useState(GraphType.TraficFlow);
   
 
   // Date and Time States
@@ -255,10 +259,15 @@ const applyIDSFilters = () => {
               </div>
             </>
           ) : (
+              <>
             <div className="child">
-              {/* Add your Traffic Flow component here */}
-              <div>Traffic Flow View (To be implemented)</div>
+              <TrafficFlowVisualizationIDS data={filteredIDSData} filter={null}/>
             </div>
+              
+            <div className="child">
+              <TrafficFlowVisualizationFirewall data={filteredFirewallData} filter={null}/>
+            </div>
+            </>
           )}
         </div>
       </div>  
