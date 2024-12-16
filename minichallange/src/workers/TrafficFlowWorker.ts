@@ -1,12 +1,16 @@
 import * as d3 from "d3-force";
 
-// A helper function to calculate degree for nodes
+// Calculate metrics
 function calculateMetrics(nodes: any[], links: any[]) {
     const degreeMap: { [key: string]: number } = {};
-
+    // Count degrees for each node
     links.forEach((link) => {
         degreeMap[link.source] = (degreeMap[link.source] || 0) + 1;
         degreeMap[link.target] = (degreeMap[link.target] || 0) + 1;
+    });
+        
+    nodes.forEach((node) => {
+        degreeMap[node.id] = degreeMap[node.id] || 0; // Ensure disconnected nodes are included
     });
 
     return nodes.map((node) => ({
@@ -18,17 +22,13 @@ function calculateMetrics(nodes: any[], links: any[]) {
     }));
 }
 
-let simulation: d3.Simulation<any, any> | null = null;
-
 self.onmessage = (event) => {
     const { nodes, links } = event.data;
 
-    // Calculate metrics
     const updatedNodes = calculateMetrics(nodes, links);
+    console.log("Sending updated nodes from worker:", updatedNodes);
 
-    // Initialize the simulation
-    simulation = d3
-        .forceSimulation(updatedNodes)
+    const simulation = d3.forceSimulation(updatedNodes)
         .force("link", d3.forceLink(links).id((d: any) => d.id).distance(100))
         .force("charge", d3.forceManyBody().strength(-50))
         .force("center", d3.forceCenter(400, 400))
@@ -39,10 +39,12 @@ self.onmessage = (event) => {
             self.postMessage({ type: "complete", nodes: updatedNodes });
         });
 
+    // Safety timeout to stop simulation after a duration
     setTimeout(() => {
-        if (simulation) {
+        if(simulation)
+        {
             simulation.stop();
             self.postMessage({ type: "complete", nodes: updatedNodes });
         }
-    }, 5000);
+    }, 5000); // Fallback after 5 seconds
 };

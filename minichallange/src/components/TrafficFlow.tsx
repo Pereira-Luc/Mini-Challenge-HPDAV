@@ -42,6 +42,7 @@ const TrafficFlow = () => {
         classification: [] as string[],
     });
 
+
     // Fetch Data
     const fetchData = async (start: string, end: string) => {
         try {
@@ -71,6 +72,7 @@ const TrafficFlow = () => {
             priority: priorities,
             classification: classifications,
         });
+
     };
 
     useEffect(() => {
@@ -85,49 +87,107 @@ const TrafficFlow = () => {
             [field]: value,
         }));
     };
-    
     const applyFilters = (filters: any) => {
-        console.log("Applying Filters:", filters); // Log incoming filters
-        console.log("Original Merged Data:", mergedData); // Log the unfiltered data
+        console.log("Applying Filters:", filters); // Debug incoming filters
+        console.log("Original Merged Data:", mergedData); // Debug original data
     
         let filtered = mergedData;
-        console.log("filtered Data: ", filtered);
     
+        // Apply filters only if the value is not empty or default
         if (filters.protocol) {
+            console.log("Before protocol filter:", filtered);
             filtered = filtered.filter(
-                (item) => item.Protocol?.toLowerCase() === filters.protocol.trim().toLowerCase()
+                (item) =>
+                    item.Protocol &&
+                    item.Protocol.toLowerCase() === filters.protocol.trim().toLowerCase()
             );
+            console.log("After protocol filter:", filtered);
         }
         if (filters.sourcePort) {
+            console.log("Before sourcePort filter:", filtered);
             filtered = filtered.filter(
                 (item) => String(item.SourcePort) === filters.sourcePort.trim()
             );
+            console.log("After sourcePort filter:", filtered);
         }
         if (filters.destinationPort) {
+            console.log("Before destinationPort filter:", filtered);
             filtered = filtered.filter(
                 (item) => String(item.DestinationPort) === filters.destinationPort.trim()
             );
+            console.log("After destinationPort filter:", filtered);
         }
         if (filters.priority) {
+            console.log("Before priority filter:", filtered);
             filtered = filtered.filter(
-                (item) => String(item.Priority)?.toLowerCase() === filters.priority.trim().toLowerCase()
+                (item) =>
+                    String(item.Priority)?.toLowerCase() ===
+                    filters.priority.trim().toLowerCase()
             );
+            console.log("After priority filter:", filtered);
         }
         if (filters.classification) {
-            filtered = filtered.filter(
-                (item) => item.Classification?.toLowerCase().includes(filters.classification.trim().toLowerCase())
+            console.log("Before classification filter:", filtered);
+            filtered = filtered.filter((item) =>
+                item.Classification?.toLowerCase().includes(
+                    filters.classification.trim().toLowerCase()
+                )
             );
+            console.log("After classification filter:", filtered);
         }
         if (filters.ipAddress) {
+            console.log("Before ipAddress filter:", filtered);
             const ipFilter = filters.ipAddress.trim();
             filtered = filtered.filter(
                 (item) =>
-                    item.SourceIP?.includes(ipFilter) || item.DestinationIP?.includes(ipFilter)
+                    item.SourceIP?.includes(ipFilter) ||
+                    item.DestinationIP?.includes(ipFilter)
             );
-        }        
-        console.log("Filtered Data:", filtered); // Log the filtered result
+            console.log("After ipAddress filter:", filtered);
+        }
+    
+        // Numeric filters (e.g., degree, closeness)
+        if (filters.degree.min !== 0 || filters.degree.max !== 100) {
+            console.log("Before degree filter:", filtered);
+            filtered = filtered.filter(
+                (item) =>
+                    item.Degree >= filters.degree.min &&
+                    item.Degree <= filters.degree.max
+            );
+            console.log("After degree filter:", filtered);
+        }
+        if (filters.closeness.min !== 0 || filters.closeness.max !== 1) {
+            console.log("Before closeness filter:", filtered);
+            filtered = filtered.filter(
+                (item) =>
+                    item.Closeness >= filters.closeness.min &&
+                    item.Closeness <= filters.closeness.max
+            );
+            console.log("After closeness filter:", filtered);
+        }
+        if (filters.betweenness.min !== 0 || filters.betweenness.max !== 1) {
+            console.log("Before betweenness filter:", filtered);
+            filtered = filtered.filter(
+                (item) =>
+                    item.Betweenness >= filters.betweenness.min &&
+                    item.Betweenness <= filters.betweenness.max
+            );
+            console.log("After betweenness filter:", filtered);
+        }
+        if (filters.eigenvector.min !== 0 || filters.eigenvector.max !== 1) {
+            console.log("Before eigenvector filter:", filtered);
+            filtered = filtered.filter(
+                (item) =>
+                    item.Eigenvector >= filters.eigenvector.min &&
+                    item.Eigenvector <= filters.eigenvector.max
+            );
+            console.log("After eigenvector filter:", filtered);
+        }
+    
+        console.log("Filtered Data:", filtered); // Debug final filtered result
         setFilteredData(filtered);
     };
+    
     
     // Generate list of days in the range
     const days = [];
@@ -181,17 +241,11 @@ const TrafficFlow = () => {
             <div style = {{ marginBottom: "20px" }}>
             {/* Filters Component */}
             <Filters
-            uniqueValues={{
-                protocol: ["HTTP", "TCP", "UDP"],
-                sourcePort: ["80", "443"],
-                destinationPort: ["8080", "3000"],
-                priority: ["High", "Low"],
-                classification: ["Safe", "Unsafe"],
-            }}
-            selectedFilters={selectedFilters}
-            onFilterChange={handleFilterChange}
-            onApplyFilters={applyFilters}
-        />
+                uniqueValues={uniqueValues}
+                selectedFilters={selectedFilters}
+                onFilterChange={handleFilterChange}
+                onApplyFilters={applyFilters}
+            />
             </div>
             <DaySelector
                 selectedDay={selectedDay}
@@ -226,6 +280,8 @@ const TrafficFlow = () => {
             data={filteredData} 
             filter={null} 
             onMetricsUpdate={(updatedNodes) => {
+                console.log("Updated Nodes from Worker:", updatedNodes);
+
                 const mergedWithMetrics = mergedData.map((item) => {
                     const node = updatedNodes.find(
                         (n) => n.id === item.SourceIP || n.id === item.DestinationIP

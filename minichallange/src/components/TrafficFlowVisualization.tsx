@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MergedData } from "../util/interface";
 import LoadingOverlay from "./LoadingOverlay";
 
@@ -82,12 +82,15 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
 
         const nodesData: SimulationNode[] = Array.from(
             new Set(data.flatMap((d) => [d.SourceIP, d.DestinationIP]))
-        ).map((id) => ({
-            id,
-            degree: nodeDegree[id] || 0,
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-        }));
+        ).map((id) => {
+            const originalData = data.find((d) => d.SourceIP === id || d.DestinationIP === id); // Find data for node
+            return {
+                id,
+                degree: nodeDegree[id] || 0,
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+            };
+        });
 
         setNodes(nodesData);
         setLinks(linksData);
@@ -96,29 +99,36 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
 
         // Simulate progress bar
         const progressInterval = setInterval(() => {
-            setProgress((prev) => Math.min(prev + 5, 95)); // Cap at 95% until the worker finishes
+            setProgress((prev) => Math.min(prev + 5, 95));
         }, 200);
-
+    
         workerRef.current.onmessage = (event) => {
             const { type, nodes: updatedNodes } = event.data;
-
+    
             if (type === "progress") {
-                setProgress((prev) => Math.min(prev + 5, 95)); // Update progress incrementally
+                setProgress((prev) => Math.min(prev + 5, 95));
             } else if (type === "complete") {
-                onMetricsUpdate(updatedNodes); // Send metrics back to parent
-                setNodes(updatedNodes);
-                renderCanvas(ctx, updatedNodes, linksData, cursorPos);
-                setLoading(false); // Stop loading when simulation completes
-                setProgress(100); // Complete progress
                 clearInterval(progressInterval);
+                setNodes(updatedNodes);
+                setLoading(false);
+                setProgress(100);
             }
         };
+    
+        workerRef.current.postMessage({ nodes: nodesData, links: linksData });
 
         return () => {
             if (workerRef.current) workerRef.current.terminate();
             clearInterval(progressInterval);
         };
     }, [data]);
+
+    const memoizedData = useMemo(() => data, [data]);
+
+    useEffect(() => {
+        // Existing worker logic here
+    }, [memoizedData]);
+
 
     const renderCanvas = (
         ctx: CanvasRenderingContext2D,
@@ -177,13 +187,23 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         ctx.restore();
     };
     
-
-    const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
-        event.preventDefault();
-        const scaleAmount = event.deltaY > 0 ? 0.9 : 1.1; // Zoom in or out
-        setScale((prev) => Math.max(0.5, Math.min(5, prev * scaleAmount))); // Restrict scale range between 0.5 and 5
-    };
-
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+    
+        const handleWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            const scaleAmount = event.deltaY > 0 ? 0.9 : 1.1; // Zoom in or out
+            setScale((prev) => Math.max(0.5, Math.min(5, prev * scaleAmount)));
+        };
+    
+        canvas.addEventListener("wheel", handleWheel, { passive: false });
+    
+        return () => {
+            canvas.removeEventListener("wheel", handleWheel);
+        };
+    }, []);
+    
 
 
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -228,7 +248,6 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
                 width={1800}
                 height={1200}
                 style={{ border: "1px solid black", cursor: loading ? "not-allowed" : "grab" }}
-                onWheel={handleWheel}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
             ></canvas>

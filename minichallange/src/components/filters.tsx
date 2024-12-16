@@ -9,6 +9,7 @@ interface FiltersProps {
         classification: string[];
     };
     onFilterChange: (field: string, value: string | { min: number; max: number }) => void;
+    
     onApplyFilters: (filters: any) => void;
     selectedFilters: {
         protocol: string;
@@ -22,6 +23,8 @@ interface FiltersProps {
         betweenness: { min: number; max: number };
         eigenvector: { min: number; max: number };
     };
+
+    
 }
 
 const Filters: React.FC<FiltersProps> = ({
