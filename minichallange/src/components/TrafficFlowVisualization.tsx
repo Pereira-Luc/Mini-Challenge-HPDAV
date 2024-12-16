@@ -22,9 +22,11 @@ interface SimulationLink {
 interface TrafficFlowVisualizationProps {
     data: MergedData[];
     filter: string | null;
+    onMetricsUpdate: (updatedNodes: any[]) => void; // Callback to update metrics
+
 }
 
-const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ data }) => {
+const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ data, onMetricsUpdate, }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const workerRef = useRef<Worker | null>(null);
     const [scale, setScale] = useState(1);
@@ -103,6 +105,7 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
             if (type === "progress") {
                 setProgress((prev) => Math.min(prev + 5, 95)); // Update progress incrementally
             } else if (type === "complete") {
+                onMetricsUpdate(updatedNodes); // Send metrics back to parent
                 setNodes(updatedNodes);
                 renderCanvas(ctx, updatedNodes, linksData, cursorPos);
                 setLoading(false); // Stop loading when simulation completes
@@ -117,7 +120,6 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         };
     }, [data]);
 
-
     const renderCanvas = (
         ctx: CanvasRenderingContext2D,
         nodes: SimulationNode[],
@@ -125,10 +127,10 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         cursor: { x: number; y: number }
     ) => {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
+    
         ctx.save();
         ctx.setTransform(scale, 0, 0, scale, translate.x, translate.y);
-
+    
         // Draw links
         links.forEach((link) => {
             const source = nodes.find((node) => node.id === link.source);
@@ -142,29 +144,39 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
                 ctx.stroke();
             }
         });
-
-        // Draw nodes and labels
+    
+        // Draw nodes
         nodes.forEach((node) => {
             ctx.beginPath();
             ctx.arc(node.x, node.y, Math.min(2, node.degree * 0.2 + 1), 0, Math.PI * 2);
             ctx.fillStyle = node.degree > 10 ? "#0073e6" : "#b3d9ff";
             ctx.fill();
             ctx.closePath();
-
-            // Highlight node if cursor is close
+    
+            // Always show labels for high-degree nodes
+            if (node.degree > 10) {
+                ctx.font = "10px Arial";
+                ctx.fillStyle = "blue";
+                ctx.fillText(node.id, node.x + 5, node.y - 5);
+            }
+        });
+    
+        // Highlight node if cursor is close
+        nodes.forEach((node) => {
             const distance = Math.hypot(
                 (cursor.x - translate.x) / scale - node.x,
                 (cursor.y - translate.y) / scale - node.y
             );
-            if (distance < 20) {
+            if (distance < 20 && node.degree <= 10) {
                 ctx.font = "10px Arial";
                 ctx.fillStyle = "black";
                 ctx.fillText(node.id, node.x + 5, node.y - 5);
             }
         });
-
+    
         ctx.restore();
     };
+    
 
     const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
         event.preventDefault();

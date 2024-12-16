@@ -14,20 +14,26 @@ const formatDate = (date: Date): string =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 const TrafficFlow = () => {
-    const [mergedData, setMergedData] = useState<MergedData[]>([]);
-    const [selectedDay, setSelectedDay] = useState<string>(formatDate(MIN_TIME));
-    const [startTime, setStartTime] = useState<string>("2012-04-05T17:51:26");
-    const [endTime, setEndTime] = useState<string>("2012-04-05T18:00:00");
-    const [intervalSize, setIntervalSize] = useState<number>(5);
-    const [filteredData, setFilteredData] = useState<MergedData[]>([]);
-    const [selectedFilters, setSelectedFilters] = useState({
+    const initialFilters = {
         protocol: "",
         sourcePort: "",
         destinationPort: "",
         priority: "",
         classification: "",
         ipAddress: "",
-    });
+        degree: { min: 0, max: 100 }, // Default range for degree
+        closeness: { min: 0, max: 1 }, // Closeness is usually normalized
+        betweenness: { min: 0, max: 1 },
+        eigenvector: { min: 0, max: 1 },
+    };
+    
+    const [mergedData, setMergedData] = useState<MergedData[]>([]);
+    const [selectedDay, setSelectedDay] = useState<string>(formatDate(MIN_TIME));
+    const [startTime, setStartTime] = useState<string>("2012-04-05T17:51:26");
+    const [endTime, setEndTime] = useState<string>("2012-04-05T18:00:00");
+    const [intervalSize, setIntervalSize] = useState<number>(5);
+    const [filteredData, setFilteredData] = useState<MergedData[]>([]);
+    const [selectedFilters, setSelectedFilters] = useState(initialFilters);
     const [uniqueValues, setUniqueValues] = useState({
         protocol: [] as string[],
         sourcePort: [] as string[],
@@ -73,11 +79,13 @@ const TrafficFlow = () => {
 
 
     // Handle filter changes
-    const handleFilterChange = (field: string, value: string) => {
-        setSelectedFilters({ ...selectedFilters, [field]: value });
-        applyFilters({ ...selectedFilters, [field]: value });
+    const handleFilterChange = (field: string, value: string | { min: number; max: number }) => {
+        setSelectedFilters((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
     };
-
+    
     const applyFilters = (filters: any) => {
         console.log("Applying Filters:", filters); // Log incoming filters
         console.log("Original Merged Data:", mergedData); // Log the unfiltered data
@@ -173,11 +181,17 @@ const TrafficFlow = () => {
             <div style = {{ marginBottom: "20px" }}>
             {/* Filters Component */}
             <Filters
-                uniqueValues={uniqueValues}
-                onFilterChange={handleFilterChange}
-                onApplyFilters={applyFilters}
-                selectedFilters={selectedFilters}
-            />   
+            uniqueValues={{
+                protocol: ["HTTP", "TCP", "UDP"],
+                sourcePort: ["80", "443"],
+                destinationPort: ["8080", "3000"],
+                priority: ["High", "Low"],
+                classification: ["Safe", "Unsafe"],
+            }}
+            selectedFilters={selectedFilters}
+            onFilterChange={handleFilterChange}
+            onApplyFilters={applyFilters}
+        />
             </div>
             <DaySelector
                 selectedDay={selectedDay}
@@ -208,7 +222,26 @@ const TrafficFlow = () => {
             </div>
 
             {/* Visualization Component */}
-            <TrafficFlowVisualization data={filteredData} filter={null} />
+            <TrafficFlowVisualization 
+            data={filteredData} 
+            filter={null} 
+            onMetricsUpdate={(updatedNodes) => {
+                const mergedWithMetrics = mergedData.map((item) => {
+                    const node = updatedNodes.find(
+                        (n) => n.id === item.SourceIP || n.id === item.DestinationIP
+                    );
+                    return {
+                        ...item,
+                        Degree: node?.degree || 0,
+                        Closeness: node?.closeness || 0,
+                        Betweenness: node?.betweenness || 0,
+                        Eigenvector: node?.eigenvector || 0,
+                    };
+                });
+                setFilteredData(mergedWithMetrics);
+    }}
+/>
+
         </div>
     );
 };
