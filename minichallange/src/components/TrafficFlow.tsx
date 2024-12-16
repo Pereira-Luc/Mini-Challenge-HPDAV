@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { SetStateAction, useEffect, useState } from "react";
 import { getMergedDataByDateTimeRange } from "../util/fetchers";
 import { MergedData } from "../util/interface";
 import TrafficFlowVisualization from "./TrafficFlowVisualization";

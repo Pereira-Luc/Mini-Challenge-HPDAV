@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MergedData } from "../util/interface";
+import LoadingOverlay from "./LoadingOverlay";
 
 interface SimulationNode {
     x: number;
@@ -26,14 +27,29 @@ interface TrafficFlowVisualizationProps {
 const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ data }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const workerRef = useRef<Worker | null>(null);
-    const [scale, setScale] = useState(1); // For zoom functionality
-    const [translate, setTranslate] = useState({ x: 0, y: 0 }); // For pan functionality
-    const [nodes, setNodes] = useState<SimulationNode[]>([]); // To store nodes
-    const [links, setLinks] = useState<SimulationLink[]>([]); // To store links
+    const [scale, setScale] = useState(1);
+    const [translate, setTranslate] = useState({ x: 0, y: 0 });
+    const [nodes, setNodes] = useState<SimulationNode[]>([]);
+    const [links, setLinks] = useState<SimulationLink[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [progress, setProgress] = useState(0);
+    const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+ 
+
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        renderCanvas(ctx, nodes, links, cursorPos);
+    }, [scale, translate, nodes, links]);
 
     useEffect(() => {
         if (workerRef.current) {
-            workerRef.current.terminate(); // Clean up old worker if it exists
+            workerRef.current.terminate();
         }
         workerRef.current = new Worker(new URL("../workers/TrafficFlowWorker.ts", import.meta.url), {
             type: "module",
@@ -45,7 +61,9 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        // Convert data into nodes and links
+        setLoading(true);
+        setProgress(0);
+
         const linksData: SimulationLink[] = data.map((d) => ({
             source: d.SourceIP,
             target: d.DestinationIP,
@@ -65,20 +83,20 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         ).map((id) => ({
             id,
             degree: nodeDegree[id] || 0,
-            x: Math.random() * canvas.width, // Initialize with random positions
+            x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
         }));
 
         setNodes(nodesData);
         setLinks(linksData);
 
-        // Send nodes and links to the worker
         workerRef.current.postMessage({ nodes: nodesData, links: linksData });
 
         workerRef.current.onmessage = (event) => {
             const updatedNodes: SimulationNode[] = event.data.nodes;
-            setNodes(updatedNodes); // Update nodes state
-            renderCanvas(ctx, updatedNodes, linksData); // Render with updated nodes
+            setNodes(updatedNodes);
+            renderCanvas(ctx, updatedNodes, linksData, cursorPos);
+            setLoading(false);
         };
 
         return () => {
@@ -86,26 +104,18 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         };
     }, [data]);
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        renderCanvas(ctx, nodes, links);
-    }, [scale, translate, nodes, links]);
 
     const renderCanvas = (
         ctx: CanvasRenderingContext2D,
         nodes: SimulationNode[],
-        links: SimulationLink[]
+        links: SimulationLink[],
+        cursor: { x: number; y: number }
     ) => {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    
+
         ctx.save();
         ctx.setTransform(scale, 0, 0, scale, translate.x, translate.y);
-    
+
         // Draw links
         links.forEach((link) => {
             const source = nodes.find((node) => node.id === link.source);
@@ -114,37 +124,42 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
                 ctx.beginPath();
                 ctx.moveTo(source.x, source.y);
                 ctx.lineTo(target.x, target.y);
-                ctx.lineWidth = 0.5; // Make links very thin
+                ctx.lineWidth = 0.5;
                 ctx.strokeStyle = link.priority <= 2 ? "red" : "#ccc";
                 ctx.stroke();
             }
         });
-    
+
         // Draw nodes and labels
         nodes.forEach((node) => {
             ctx.beginPath();
-            ctx.arc(node.x, node.y, Math.min(2, node.degree * 0.2 + 1), 0, Math.PI * 2); // Make nodes smaller
+            ctx.arc(node.x, node.y, Math.min(2, node.degree * 0.2 + 1), 0, Math.PI * 2);
             ctx.fillStyle = node.degree > 10 ? "#0073e6" : "#b3d9ff";
             ctx.fill();
             ctx.closePath();
-    
-            // Show labels only for high-degree nodes or significant zoom level
-            if (scale > 2 && node.degree > 10) {
+
+            // Highlight node if cursor is close
+            const distance = Math.hypot(
+                (cursor.x - translate.x) / scale - node.x,
+                (cursor.y - translate.y) / scale - node.y
+            );
+            if (distance < 20) {
                 ctx.font = "10px Arial";
-                ctx.fillStyle = "#000";
-                ctx.fillText(node.id, node.x + 3, node.y - 3); // Offset the labels
+                ctx.fillStyle = "black";
+                ctx.fillText(node.id, node.x + 5, node.y - 5);
             }
         });
-    
+
         ctx.restore();
     };
-    
 
     const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
         event.preventDefault();
         const scaleAmount = event.deltaY > 0 ? 0.9 : 1.1; // Zoom in or out
         setScale((prev) => Math.max(0.5, Math.min(5, prev * scaleAmount))); // Restrict scale range between 0.5 and 5
     };
+
+
 
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
         const startX = event.clientX;
@@ -167,16 +182,34 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         document.addEventListener("mouseup", handleMouseUp);
     };
 
+    const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        setCursorPos({
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+        });
+    };
+
+
+
     return (
-        <canvas
-            ref={canvasRef}
-            width={800}
-            height={800}
-            style={{ border: "1px solid black", cursor: "grab" }}
-            onWheel={handleWheel}
-            onMouseDown={handleMouseDown}
-        ></canvas>
+        <div>
+            {loading && <LoadingOverlay progress={progress} />}
+            <canvas
+                ref={canvasRef}
+                width={1800}
+                height={1200}
+                style={{ border: "1px solid black", cursor: loading ? "not-allowed" : "grab" }}
+                onWheel={handleWheel}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+            ></canvas>
+        </div>
     );
 };
+
 
 export default TrafficFlowVisualization;
