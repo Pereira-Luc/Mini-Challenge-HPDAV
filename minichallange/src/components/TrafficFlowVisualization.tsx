@@ -45,7 +45,7 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         if (!ctx) return;
 
         renderCanvas(ctx, nodes, links, cursorPos);
-    }, [scale, translate, nodes, links]);
+    }, [scale, translate, nodes, links, cursorPos]);
 
     useEffect(() => {
         if (workerRef.current) {
@@ -92,15 +92,28 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
 
         workerRef.current.postMessage({ nodes: nodesData, links: linksData });
 
+        // Simulate progress bar
+        const progressInterval = setInterval(() => {
+            setProgress((prev) => Math.min(prev + 5, 95)); // Cap at 95% until the worker finishes
+        }, 200);
+
         workerRef.current.onmessage = (event) => {
-            const updatedNodes: SimulationNode[] = event.data.nodes;
-            setNodes(updatedNodes);
-            renderCanvas(ctx, updatedNodes, linksData, cursorPos);
-            setLoading(false);
+            const { type, nodes: updatedNodes } = event.data;
+
+            if (type === "progress") {
+                setProgress((prev) => Math.min(prev + 5, 95)); // Update progress incrementally
+            } else if (type === "complete") {
+                setNodes(updatedNodes);
+                renderCanvas(ctx, updatedNodes, linksData, cursorPos);
+                setLoading(false); // Stop loading when simulation completes
+                setProgress(100); // Complete progress
+                clearInterval(progressInterval);
+            }
         };
 
         return () => {
             if (workerRef.current) workerRef.current.terminate();
+            clearInterval(progressInterval);
         };
     }, [data]);
 
