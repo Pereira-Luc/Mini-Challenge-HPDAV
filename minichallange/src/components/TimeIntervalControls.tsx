@@ -6,7 +6,8 @@ interface TimeIntervalControlsProps {
     isAtStart: boolean;
     isAtEnd: boolean;
     onIntervalChange: (direction: "forward" | "backward") => void;
-    onTimeChange: (newStartTime: string, newEndTime: string) => void;
+    onTimeChange?: (newStartTime: string, newEndTime: string) => void;
+    changeItervalSize: (newSize: number) => void;
     onAcceptTime: (startTime: string, endTime: string) => void;
 }
 
@@ -24,7 +25,7 @@ const TimeIntervalControls: React.FC<TimeIntervalControlsProps> = ({
     isAtStart,
     isAtEnd,
     onIntervalChange,
-    onTimeChange,
+    changeItervalSize,
     onAcceptTime,
 }) => {
     const [editedStartTime, setEditedStartTime] = useState(extractTime(startTime));
@@ -84,7 +85,11 @@ const TimeIntervalControls: React.FC<TimeIntervalControlsProps> = ({
                     min="1"
                     max="60"
                     value={intervalSize}
-                    onChange={(e) => setIntervalSize(Number(e.target.value))}
+                    onChange={(e) => {
+                        console.log("Interval Size Change:", e.target.value);
+                        setIntervalSize(Number(e.target.value));
+                        changeItervalSize(Number(e.target.value));
+                    }}
                 />
                 <span>{intervalSize} minutes</span>
             </div>
