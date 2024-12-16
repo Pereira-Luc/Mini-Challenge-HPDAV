@@ -68,11 +68,11 @@ const TimeIntervalControls: React.FC<TimeIntervalControlsProps> = ({
                     style={{ marginLeft: "5px" }}
                 />
             </span>
-            <button onClick={() => onIntervalChange("forward")} disabled={isAtEnd}>
-                Next Interval ▶
-            </button>
             <button onClick={() => onAcceptTime(editedStartTime, editedEndTime)} style={{ marginLeft: "10px" }}>
                 Accept Time
+            </button>
+            <button onClick={() => onIntervalChange("forward")} disabled={isAtEnd}>
+                Next Interval ▶
             </button>
         </div>
     );
