@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getMergedDataByDateTimeRange } from "./util/fetchers";
-import { MergedData } from "./util/interface";
+import { MergedData, TimeWindow } from "./util/interface";
 import Filters from "./components/filters";
 import DaySelector from "./components/DaySelector";
 import TimeIntervalControls from "./components/TimeIntervalControls";
@@ -8,6 +8,7 @@ import TrafficFlow from "./components/TrafficFlow";
 import ParallelCoordinatesPlot from "./components/ParallelCoordinatesPlot";
 
 import HistContainer from "./components/hist/HistContainer.jsx";
+import ParallelCoordinatesPlot2 from "./components/ParallelCoordinatesPlot2.js";
 
 const MIN_TIME = new Date("2012-04-05T17:51:26");
 const MAX_TIME = new Date("2012-04-07T09:00:04");
@@ -43,7 +44,9 @@ const App = () => {
     const [selectedDay, setSelectedDay] = useState<string>(formatDate(MIN_TIME));
     const [startTime, setStartTime] = useState<string>("2012-04-05T17:51:26");
     const [endTime, setEndTime] = useState<string>("2012-04-05T18:00:00");
-    const [intervalSize, setIntervalSize] = useState<number>(5);
+    const [intervalSize, setIntervalSize] = useState<number>(120);
+    const [timeWindow, setTimeWindow] = useState<TimeWindow>({ start: startTime, end: endTime });
+  
 
     const fetchData = async (start: string, end: string) => {
         try {
@@ -51,6 +54,7 @@ const App = () => {
             setMergedData(data);
             setFilteredData(data);
             extractUniqueValues(data);
+            setTimeWindow({ start: start, end: end });
         } catch (error) {
             console.error("Error fetching merged data:", error);
         }
@@ -122,7 +126,11 @@ const App = () => {
     };
 
     useEffect(() => {
-        fetchData(startTime, endTime);
+      fetchData(startTime, endTime);
+      console.log("fetching data");
+      console.log(startTime);
+      console.log(endTime);
+      
     }, [startTime, endTime]);
 
     return (
@@ -151,7 +159,7 @@ const App = () => {
                 }
             }
         />
-        <HistContainer />
+        <ParallelCoordinatesPlot width={1280} height={720} timeWindow={timeWindow} mgData={filteredData} />
 
         </div>
     );
