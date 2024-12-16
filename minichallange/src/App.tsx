@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getDataTemplate } from './util/fetchers'
 import './App.css'
 import ParallelCoordinatesPlot from './components/ParallelCoordinatesPlot'
+import TrafficFlow from './components/TrafficFlow'
 
 
 function App() {
@@ -23,7 +24,7 @@ function App() {
     <>
       <div>
         <h1>Mini Challenge</h1>
-        <ParallelCoordinatesPlot />
+        <TrafficFlow />
       </div>
     </>
   )

@@ -44,6 +44,7 @@ field_mapping_firewall = {
         'Connections torn down': 'ConnectionsTornDown'
     }
 
+
 """
 Intrusion Detection Data:
     | Field          | Description             |
@@ -202,10 +203,71 @@ def get_intrusion_detection_data_by_datetime(start_datetime, end_datetime):
     df = get_intrusion_detection_data()
     
     # Convert to datetime because the data is a string in the CSV
-    if df['time'].dtype != 'datetime64[ns]':
-        df['time'] = pd.to_datetime(df['time'], errors='coerce')
-        
-    mask = (df['time'] >= pd.to_datetime(start_datetime)) & (df['time'] <= pd.to_datetime(end_datetime))
+    if df['DateTime'].dtype != 'datetime64[ns]':
+        df['DateTime'] = pd.to_datetime(df['DateTime'], errors='coerce')
+
+    mask = (df['DateTime'] >= pd.to_datetime(start_datetime)) & (df['DateTime'] <= pd.to_datetime(end_datetime))
     return df.loc[mask]
 
+
+def get_aggregated_data_by_time(start_datetime, end_datetime, interval="1min"):
+    """
+    Aggregate firewall and IDS data by time intervals.
+
+    Parameters:
+    - start_datetime: Start datetime
+    - end_datetime: End datetime
+    - interval: Resampling interval (e.g., '1min', '5min')
+
+    Returns:
+    - pd.DataFrame: Aggregated data
+    """
+    df_firewall = get_firewall_data_by_datetime(start_datetime, end_datetime)
+    df_ids = get_intrusion_detection_data_by_datetime(start_datetime, end_datetime)
+
+    # Combine datasets
+    combined_df = pd.concat([df_firewall, df_ids], ignore_index=True)
+
+    # Convert DateTime to pandas datetime
+    combined_df['DateTime'] = pd.to_datetime(combined_df['DateTime'], errors='coerce')
+    combined_df = combined_df.dropna(subset=['DateTime'])
+
+    # Resample data based on the time interval
+    combined_df.set_index('DateTime', inplace=True)
+    aggregated_data = combined_df.resample(interval).agg({
+        'SourceIP': 'count',  # Total number of connections
+        'DestinationIP': 'count',
+        'Protocol': lambda x: x.mode()[0] if not x.empty else None,  # Most common protocol
+        'Priority': 'mean'  # Average priority (if applicable)
+    })
+
+    aggregated_data.rename(columns={'SourceIP': 'TotalConnections'}, inplace=True)
+    aggregated_data = aggregated_data.reset_index()
+
+    return aggregated_data
+
+
+def get_aggregated_data_by_ip_and_port(start_datetime, end_datetime):
+    """
+    Aggregate data by Source IP, Destination IP, and Port.
+    """
+    df_firewall = get_firewall_data_by_datetime(start_datetime, end_datetime)
+    df_ids = get_intrusion_detection_data_by_datetime(start_datetime, end_datetime)
+
+    # Combine datasets
+    combined_df = pd.concat([df_firewall, df_ids], ignore_index=True)
+
+    # Group by IPs and Ports
+    aggregated_data = combined_df.groupby(['SourceIP', 'DestinationIP', 'SourcePort', 'DestinationPort']).agg({
+        'DateTime': ['min', 'max'],  # First and last time of connections
+        'Protocol': 'first',
+        'ConnectionsBuilt': 'sum',
+        'ConnectionsTornDown': 'sum'
+    }).reset_index()
+
+    # Rename columns
+    aggregated_data.columns = ['SourceIP', 'DestinationIP', 'SourcePort', 'DestinationPort',
+                               'StartTime', 'EndTime', 'Protocol', 'ConnectionsBuilt', 'ConnectionsTornDown']
+
+    return aggregated_data
 

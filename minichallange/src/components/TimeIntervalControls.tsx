@@ -1,0 +1,81 @@
+import React, { useEffect, useState } from "react";
+
+interface TimeIntervalControlsProps {
+    startTime: string; // Expect in full ISO format
+    endTime: string;   // Expect in full ISO format
+    isAtStart: boolean;
+    isAtEnd: boolean;
+    onIntervalChange: (direction: "forward" | "backward") => void;
+    onTimeChange: (newStartTime: string, newEndTime: string) => void;
+    onAcceptTime: (startTime: string, endTime: string) => void;
+}
+
+// Helper to extract HH:mm format from ISO date string
+const extractTime = (isoString: string): string => {
+    const date = new Date(isoString);
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+};
+
+const TimeIntervalControls: React.FC<TimeIntervalControlsProps> = ({
+    startTime,
+    endTime,
+    isAtStart,
+    isAtEnd,
+    onIntervalChange,
+    onTimeChange,
+    onAcceptTime,
+}) => {
+    const [editedStartTime, setEditedStartTime] = useState(extractTime(startTime));
+    const [editedEndTime, setEditedEndTime] = useState(extractTime(endTime));
+
+    // Update local state when props change
+    useEffect(() => {
+        setEditedStartTime(extractTime(startTime));
+        setEditedEndTime(extractTime(endTime));
+    }, [startTime, endTime]);
+
+    const handleStartTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newStartTime = event.target.value;
+        setEditedStartTime(newStartTime);
+        onTimeChange(newStartTime, editedEndTime);
+    };
+
+    const handleEndTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newEndTime = event.target.value;
+        setEditedEndTime(newEndTime);
+        onTimeChange(editedStartTime, newEndTime);
+    };
+
+    return (
+        <div style={{ marginBottom: "20px" }}>
+            <button onClick={() => onIntervalChange("backward")} disabled={isAtStart}>
+                ◀ Previous Interval
+            </button>
+            <span style={{ margin: "0 10px" }}>
+                <input
+                    type="time"
+                    value={editedStartTime}
+                    onChange={handleStartTimeChange}
+                    style={{ marginRight: "5px" }}
+                />
+                -
+                <input
+                    type="time"
+                    value={editedEndTime}
+                    onChange={handleEndTimeChange}
+                    style={{ marginLeft: "5px" }}
+                />
+            </span>
+            <button onClick={() => onAcceptTime(editedStartTime, editedEndTime)} style={{ marginLeft: "10px" }}>
+                Accept Time
+            </button>
+            <button onClick={() => onIntervalChange("forward")} disabled={isAtEnd}>
+                Next Interval ▶
+            </button>
+        </div>
+    );
+};
+
+export default TimeIntervalControls;

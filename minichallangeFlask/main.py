@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from utils.dataProcessing import get_first_10_rows_firewall, get_first_10_rows_intrusion_detection, get_firewall_data_by_datetime
+from utils.dataProcessing import get_aggregated_data_by_ip_and_port, get_first_10_rows_firewall, get_first_10_rows_intrusion_detection, get_firewall_data_by_datetime,  get_intrusion_detection_data_by_datetime 
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -19,19 +20,66 @@ def data_template():
 def firewall_data_by_date_time():
     start_datetime = request.args.get('start_datetime')
     end_datetime = request.args.get('end_datetime')
-    aggregation = request.args.get('aggregation')
 
     if not start_datetime or not end_datetime:
-        return jsonify({"error": "Please provide start_datetime and end_datetime query parameters in 'YYYY-MM-DD HH:MM:SS' format"}), 400
+        return jsonify({
+            "error": "Please provide start_datetime and end_datetime query parameters in 'YYYY-MM-DDTHH:MM:SS' format"
+        }), 400
 
     try:
-        if aggregation:
-            data = get_firewall_data_by_datetime(start_datetime, end_datetime).resample(aggregation, on='DateTime').count()
+        # Debugging Logs
+        print(f"Start datetime: {start_datetime}")
+        print(f"End datetime: {end_datetime}")
+
+        # Fetch and filter data
         data = get_firewall_data_by_datetime(start_datetime, end_datetime)
+
+        # Ensure non-empty data
+        if data.empty:
+            return jsonify({"error": "No data found for the given date range"}), 404
+
         return data.to_json(orient='records', date_format='iso'), 200
+    except ValueError as ve:
+        return jsonify({"error": f"Invalid datetime format: {str(ve)}"}), 400
+    except KeyError as ke:
+        return jsonify({"error": f"Missing expected key: {str(ke)}"}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
     
+
+
+# Route for IDS data by date range
+@app.route('/idsDataByDateTime', methods=['GET'])
+def ids_data_by_date_time():
+    start_datetime = request.args.get('start')
+    end_datetime = request.args.get('end')
+
+    if not start_datetime or not end_datetime:
+        return jsonify({
+            "error": "Please provide start_datetime and end_datetime query parameters in 'YYYY-MM-DDTHH:MM:SS' format"
+        }), 400
+
+    try:
+        # Debugging Logs
+        print(f"Start datetime: {start_datetime}")
+        print(f"End datetime: {end_datetime}")
+
+        # Fetch and filter IDS data
+        data = get_intrusion_detection_data_by_datetime(start_datetime, end_datetime)
+
+        # Ensure non-empty data
+        if data.empty:
+            return jsonify({"error": "No data found for the given date range"}), 404
+
+        return data.to_json(orient='records', date_format='iso'), 200
+    except ValueError as ve:
+        return jsonify({"error": f"Invalid datetime format: {str(ve)}"}), 400
+    except KeyError as ke:
+        return jsonify({"error": f"Missing expected key: {str(ke)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+
 
 print("Preloading data...")
 print(get_first_10_rows_firewall())

@@ -1,9 +1,14 @@
 #root {
-  max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  /* Remove max-width or set it to a higher value */
+  max-width: none;
+  width: 100vw;
+  height: 100vh; /* Occupy the full viewport */
 }
+
+
 
 .logo {
   height: 6em;

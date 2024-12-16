@@ -6,13 +6,14 @@ const ParallelCoordinatesPlot = () => {
     const [firewallData, setfirewallData] = useState<FirewallData[]>([]);
 
     useEffect(() => {
-        generateParallelCoordinatesPlot(firewallData, ["DateTime", "SourceIP", "DestinationIP"]);
+        if (firewallData.length > 0) {
+            generateParallelCoordinatesPlot(firewallData, ["DateTime", "SourceIP", "DestinationIP"]);
+        }
     }, [firewallData]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                console.log("Fetching data...");
                 const data: FirewallData[] = await getFirewallDataByDateTimeRange("2012-04-06T17:40:00", "2012-04-06T17:45:00");
                 setfirewallData(data);
             } catch (error) {
