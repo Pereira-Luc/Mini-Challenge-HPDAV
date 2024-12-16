@@ -58,3 +58,11 @@ export interface MergedData {
     SourcePort: string | number;    // From FirewallData (string) or IDSLog (number)
     DestinationPort: string | number; // From FirewallData (string) or IDSLog (number)
 }
+
+export interface ParallelCoordinatesPlotProps {
+    width: number;
+    height: number;
+    startDate: string;
+    endDate: string;
+    timeWindow?: { start: Date; end: Date };
+}
