@@ -1,7 +1,7 @@
 import { SetStateAction, useEffect, useState } from "react";
-import { getMergedDataByDateTimeRange } from "../util/fetchers";
-import { MergedData } from "../util/interface";
-import TrafficFlowVisualization from "./TrafficFlowVisualization";
+import { getFirewallDataByDateTimeRange } from "../util/fetchers";
+import { FirewallData, MergedData } from "../util/interface";
+import TrafficFlowVisualizationFirewall from "./TrafficFlowVisualizationFirewall";
 import Filters from "./filters";
 import DaySelector from "./DaySelector";
 import TimeIntervalControls from "./TimeIntervalControls";
@@ -13,7 +13,7 @@ const MAX_TIME = new Date("2012-04-07T09:00:04");
 const formatDate = (date: Date): string =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-const TrafficFlow = () => {
+const TrafficFlowFirewall = () => {
     const initialFilters = {
         protocol: "",
         sourcePort: "",
@@ -27,26 +27,24 @@ const TrafficFlow = () => {
         eigenvector: { min: 0, max: 1 },
     };
     
-    const [mergedData, setMergedData] = useState<MergedData[]>([]);
+    const [firewallData, setMergedData] = useState<FirewallData[]>([]);
     const [selectedDay, setSelectedDay] = useState<string>(formatDate(MIN_TIME));
     const [startTime, setStartTime] = useState<string>("2012-04-05T17:51:26");
     const [endTime, setEndTime] = useState<string>("2012-04-05T18:00:00");
     const [intervalSize, setIntervalSize] = useState<number>(5);
-    const [filteredData, setFilteredData] = useState<MergedData[]>([]);
+    const [filteredData, setFilteredData] = useState<FirewallData[]>([]);
     const [selectedFilters, setSelectedFilters] = useState(initialFilters);
     const [uniqueValues, setUniqueValues] = useState({
         protocol: [] as string[],
         sourcePort: [] as string[],
         destinationPort: [] as string[],
-        priority: [] as string[],
-        classification: [] as string[],
     });
 
 
     // Fetch Data
     const fetchData = async (start: string, end: string) => {
         try {
-            const data: MergedData[] = await getMergedDataByDateTimeRange(start, end);
+            const data: FirewallData[] = await getFirewallDataByDateTimeRange(start, end);
             console.log("Fetched Merged Data:", data); // Log fetched data
 
             setMergedData(data);
@@ -58,19 +56,16 @@ const TrafficFlow = () => {
     };
 
     // Extract unique values for filters
-    const extractUniqueValues = (data: MergedData[]) => {
+    const extractUniqueValues = (data: FirewallData[]) => {
         const protocols = Array.from(new Set(data.map((item) => item.Protocol).filter(Boolean)));
         const sourcePorts = Array.from(new Set(data.map((item) => String(item.SourcePort)).filter(Boolean)));
         const destinationPorts = Array.from(new Set(data.map((item) => String(item.DestinationPort)).filter(Boolean)));
-        const priorities = Array.from(new Set(data.map((item) => String(item.Priority)).filter(Boolean)));
-        const classifications = Array.from(new Set(data.map((item) => item.Classification).filter(Boolean)));
+
 
         setUniqueValues({
             protocol: protocols,
             sourcePort: sourcePorts,
             destinationPort: destinationPorts,
-            priority: priorities,
-            classification: classifications,
         });
 
     };
@@ -87,68 +82,6 @@ const TrafficFlow = () => {
             [field]: value,
         }));
     };
-    const applyFilters = (filters: any) => {
-        console.log("Applying Filters:", filters); // Debug incoming filters
-        console.log("Original Merged Data:", mergedData); // Debug original data
-    
-        let filtered = mergedData;
-    
-        // Apply filters only if the value is not empty or default
-        if (filters.protocol) {
-            console.log("Before protocol filter:", filtered);
-            filtered = filtered.filter(
-                (item) =>
-                    item.Protocol &&
-                    item.Protocol.toLowerCase() === filters.protocol.trim().toLowerCase()
-            );
-            console.log("After protocol filter:", filtered);
-        }
-        if (filters.sourcePort) {
-            console.log("Before sourcePort filter:", filtered);
-            filtered = filtered.filter(
-                (item) => String(item.SourcePort) === filters.sourcePort.trim()
-            );
-            console.log("After sourcePort filter:", filtered);
-        }
-        if (filters.destinationPort) {
-            console.log("Before destinationPort filter:", filtered);
-            filtered = filtered.filter(
-                (item) => String(item.DestinationPort) === filters.destinationPort.trim()
-            );
-            console.log("After destinationPort filter:", filtered);
-        }
-        if (filters.priority) {
-            console.log("Before priority filter:", filtered);
-            filtered = filtered.filter(
-                (item) =>
-                    String(item.Priority)?.toLowerCase() ===
-                    filters.priority.trim().toLowerCase()
-            );
-            console.log("After priority filter:", filtered);
-        }
-        if (filters.classification) {
-            console.log("Before classification filter:", filtered);
-            filtered = filtered.filter((item) =>
-                item.Classification?.toLowerCase().includes(
-                    filters.classification.trim().toLowerCase()
-                )
-            );
-            console.log("After classification filter:", filtered);
-        }
-        if (filters.ipAddress) {
-            console.log("Before ipAddress filter:", filtered);
-            const ipFilter = filters.ipAddress.trim();
-            filtered = filtered.filter(
-                (item) =>
-                    item.SourceIP?.includes(ipFilter) ||
-                    item.DestinationIP?.includes(ipFilter)
-            );
-            console.log("After ipAddress filter:", filtered);
-        }    
-        console.log("Filtered Data:", filtered); // Debug final filtered result
-        setFilteredData(filtered);
-    };
-    
     
     // Generate list of days in the range
     const days = [];
@@ -210,35 +143,6 @@ const TrafficFlow = () => {
     return (
         <div style={{ width: "100%", height: "100vh", padding: "20px" }}>
             <h1>Dynamic Traffic Flow</h1>
-
-            <div style = {{ marginBottom: "20px" }}>
-            {/* Filters Component */}
-            <Filters
-                uniqueValues={uniqueValues}
-                selectedFilters={selectedFilters}
-                onFilterChange={handleFilterChange}
-                onApplyFilters={applyFilters}
-            />
-            </div>
-            <DaySelector
-                selectedDay={selectedDay}
-                days={days}
-                onDayChange={handleDayChange}
-            />
-
-
-            <TimeIntervalControls
-                startTime={startTime}
-                endTime={endTime}
-                isAtStart={isAtStart}
-                isAtEnd={isAtEnd}
-                onIntervalChange={handleTimeIntervalChange}
-                onTimeChange={(newStartTime, newEndTime) =>
-                    console.log("Updated times:", { newStartTime, newEndTime })
-                }
-                onAcceptTime={handleAcceptTime}
-                />
-                {/* Slider for Interval Size */}
             <div style={{ marginBottom: "20px" }}>
                 <label htmlFor="intervalSize">Interval Size (minutes): </label>
                 <input
@@ -253,26 +157,9 @@ const TrafficFlow = () => {
             </div>
 
             {/* Visualization Component */}
-            <TrafficFlowVisualization 
+            <TrafficFlowVisualizationFirewall 
             data={filteredData} 
             filter={null} 
-            onMetricsUpdate={(updatedNodes) => {
-                console.log("Updated Nodes from Worker:", updatedNodes);
-
-                const mergedWithMetrics = mergedData.map((item) => {
-                    const node = updatedNodes.find(
-                        (n) => n.id === item.SourceIP || n.id === item.DestinationIP
-                    );
-                    return {
-                        ...item,
-                        Degree: node?.degree || 0,
-                        Closeness: node?.closeness || 0,
-                        Betweenness: node?.betweenness || 0,
-                        Eigenvector: node?.eigenvector || 0,
-                    };
-                });
-                setFilteredData(mergedWithMetrics);
-    }}
 />
 
         </div>
@@ -287,4 +174,4 @@ const formatDateToISO = (date: Date): string => {
     )}:${pad(date.getSeconds())}`;
 };
 
-export default TrafficFlow;
+export default TrafficFlowFirewall;

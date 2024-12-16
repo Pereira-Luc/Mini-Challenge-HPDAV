@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MergedData } from "../util/interface";
+import { IDSData } from "../util/interface";
 import LoadingOverlay from "./LoadingOverlay";
 
 interface SimulationNode {
@@ -14,19 +14,18 @@ interface SimulationNode {
 interface SimulationLink {
     source: string;
     target: string;
-    protocol: string;
     packetSize: number;
     priority: number;
+    label: string;
 }
 
-interface TrafficFlowVisualizationProps {
-    data: MergedData[];
+interface TrafficFlowVisualizationIDSProps {
+    data: IDSData[];
     filter: string | null;
-    onMetricsUpdate: (updatedNodes: any[]) => void; // Callback to update metrics
 
 }
 
-const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ data, onMetricsUpdate, }) => {
+const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationIDSProps> = ({ data, }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const workerRef = useRef<Worker | null>(null);
     const [scale, setScale] = useState(1);
@@ -37,7 +36,24 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
     const [progress, setProgress] = useState(0);
     const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
  
+    const getRandomRainbowColor = () => {
+        const hue = Math.floor(Math.random() * 360); // Random hue between 0 and 360
+        const saturation = 100; // Full saturation for vibrant colors
+        const lightness = 50; // Medium lightness for balanced brightness
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    };
+    
+    
+    const labelColorMapRef = useRef<{ [key: string]: string }>({});
 
+    const getColorForLabel = (label: string) => {
+        if (!labelColorMapRef.current[label]) {
+            labelColorMapRef.current[label] = getRandomRainbowColor(); // Assign a random color for new labels
+        }
+        return labelColorMapRef.current[label];
+    };
+    
+    
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -48,6 +64,7 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
 
         renderCanvas(ctx, nodes, links, cursorPos);
     }, [scale, translate, nodes, links, cursorPos]);
+
 
     useEffect(() => {
         if (workerRef.current) {
@@ -69,10 +86,13 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         const linksData: SimulationLink[] = data.map((d) => ({
             source: d.SourceIP,
             target: d.DestinationIP,
-            protocol: d.Protocol || "TCP",
             packetSize: d.PacketInfo ? parseInt(d.PacketInfo, 10) : 1000,
             priority: d.Priority !== undefined && d.Priority !== null ? d.Priority : 999,
+            label: d.Label || "default", // Replace 'Label' with the actual property name from your data
         }));
+
+
+
 
         const nodeDegree: { [key: string]: number } = {};
         linksData.forEach((link) => {
@@ -150,7 +170,7 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
                 ctx.moveTo(source.x, source.y);
                 ctx.lineTo(target.x, target.y);
                 ctx.lineWidth = 0.5;
-                ctx.strokeStyle = link.priority <= 2 ? "red" : "#ccc";
+                ctx.strokeStyle = getColorForLabel(link.label); // Dynamically assign color
                 ctx.stroke();
             }
         });
@@ -238,14 +258,24 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         });
     };
 
-
+    const Legend: React.FC = () => (
+        <div style={{ display: "flex", flexDirection: "column", marginTop: 10 }}>
+            {Object.entries(labelColorMapRef.current).map(([label, color]) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", marginBottom: 5 }}>
+                    <div style={{ width: 20, height: 20, backgroundColor: color, marginRight: 10 }}></div>
+                    <span>{label}</span>
+                </div>
+            ))}
+        </div>
+    );
+    
 
     return (
         <div>
             {loading && <LoadingOverlay progress={progress} />}
             <canvas
                 ref={canvasRef}
-                width={1800}
+                width={900}
                 height={1200}
                 style={{
                     border: "1px solid black",
@@ -255,6 +285,7 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
                 onMouseDown={!loading ? handleMouseDown : undefined} // Disable dragging
                 onMouseMove={!loading ? handleMouseMove : undefined} // Disable cursor tracking
             ></canvas>
+            <Legend />
         </div>
     );
 };
