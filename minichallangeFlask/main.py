@@ -18,8 +18,8 @@ def data_template():
 
 @app.route('/firewallDataByDateTime', methods=['GET'])
 def firewall_data_by_date_time():
-    start_datetime = request.args.get('start')
-    end_datetime = request.args.get('end')
+    start_datetime = request.args.get('start_datetime')
+    end_datetime = request.args.get('end_datetime')
 
     if not start_datetime or not end_datetime:
         return jsonify({
@@ -80,30 +80,13 @@ def ids_data_by_date_time():
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 
-@app.route('/paginatedData', methods=['GET'])
-def paginated_data():
-    start_datetime = request.args.get('start')
-    end_datetime = request.args.get('end')
-    limit = int(request.args.get('limit', 100))  # Default to 100
-    offset = int(request.args.get('offset', 0))  # Default to 0
-
-    if not start_datetime or not end_datetime:
-        return jsonify({"error": "Missing 'start' or 'end' query parameters"}), 400
-
-    try:
-        data = get_aggregated_data_by_ip_and_port(start_datetime, end_datetime)
-
-        # Paginate the data
-        paginated_data = data.iloc[offset:offset + limit]
-
-        return paginated_data.to_json(orient='records', date_format='iso'), 200
-    except Exception as e:
-        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
-
 
 print("Preloading data...")
 print(get_first_10_rows_firewall())
 print(get_first_10_rows_intrusion_detection())
+print("Data preloaded!")
+
+
 
 
 

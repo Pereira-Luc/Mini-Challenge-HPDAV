@@ -44,20 +44,6 @@ field_mapping_firewall = {
         'Connections torn down': 'ConnectionsTornDown'
     }
 
-field_mapping_ids = {
-    'time': 'DateTime',
-    'Source IP': 'SourceIP',
-    'Source port': 'SourcePort',
-    'Destination IP': 'DestinationIP',
-    'Destination port': 'DestinationPort',
-    'Classification': 'Classification',
-    'Priority': 'Priority',
-    'Label': 'Label',
-    'Packet info': 'PacketInfo',
-    'Packet info cont’d': 'PacketInfoContd',
-    'XRef': 'XRef',
-}
-
 
 """
 Intrusion Detection Data:
@@ -75,12 +61,24 @@ Intrusion Detection Data:
     | packet info cont'd|                      |
     | xref           |                         |
 """
-
-
+field_mapping_intrusion_detection = {
+    'time': 'DateTime',
+    ' sourceIP': 'SourceIP',
+    ' sourcePort': 'SourcePort',
+    ' destIP': 'DestinationIP',
+    ' destPort': 'DestinationPort',
+    ' classification': 'Classification',
+    ' priority': 'Priority',
+    ' label': 'Label',
+    ' packet info': 'PacketInfo',
+    ' packet info cont\'d': 'PacketInfoContd',
+    ' xref': 'Xref'
+}
 
 # Global variables to cache the data
 firewall_data_cache = None
 intrusion_detection_data_cache = None
+
 
 def get_firewall_data(directory='./data/firewall/'):
     """
@@ -102,6 +100,9 @@ def get_firewall_data(directory='./data/firewall/'):
     for file in csv_files:
         df = pd.read_csv(file, low_memory=False)
         df.rename(columns=field_mapping_firewall, inplace=True)
+        
+        # Remove rows with "(empty)" IP addresses
+        df = df[(df['SourceIP'] != '(empty)') & (df['DestinationIP'] != '(empty)') & (df['Direction'] != '(empty)')]
         data_frames.append(df)
 
     if data_frames:
@@ -125,13 +126,13 @@ def get_intrusion_detection_data(directory='./data/intrusion-detection/'):
     if intrusion_detection_data_cache is not None:
         return intrusion_detection_data_cache
 
-    
     csv_files = glob.glob(os.path.join(directory, '*.csv'))
     data_frames = []
 
     for file in csv_files:
         df = pd.read_csv(file, low_memory=False)
-        df.rename(columns=field_mapping_ids, inplace=True)
+        df.rename(columns=field_mapping_intrusion_detection, inplace=True)
+        df = df[(df['SourceIP'] != '(empty)') & (df['DestinationIP'] != '(empty)')]
         data_frames.append(df)
 
     if data_frames:
@@ -204,7 +205,7 @@ def get_intrusion_detection_data_by_datetime(start_datetime, end_datetime):
     # Convert to datetime because the data is a string in the CSV
     if df['DateTime'].dtype != 'datetime64[ns]':
         df['DateTime'] = pd.to_datetime(df['DateTime'], errors='coerce')
-        
+
     mask = (df['DateTime'] >= pd.to_datetime(start_datetime)) & (df['DateTime'] <= pd.to_datetime(end_datetime))
     return df.loc[mask]
 
@@ -269,3 +270,4 @@ def get_aggregated_data_by_ip_and_port(start_datetime, end_datetime):
                                'StartTime', 'EndTime', 'Protocol', 'ConnectionsBuilt', 'ConnectionsTornDown']
 
     return aggregated_data
+
