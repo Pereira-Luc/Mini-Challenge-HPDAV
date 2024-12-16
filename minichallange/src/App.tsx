@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
   getIDSDataByDateTimeRange,
   getFirewallDataByDateTimeRange,
@@ -12,6 +13,7 @@ import TimeIntervalControls from "./components/TimeIntervalControls";
 import { FirewallData, IDSData } from "./util/interface";
 import TrafficFlowVisualizationIDS from "./components/TrafficFlowVisualizationIDS";
 import TrafficFlowVisualizationFirewall from "./components/TrafficFlowVisualizationFirewall";
+
 
 const MIN_TIME = new Date("2012-04-05T17:51:26");
 const MAX_TIME = new Date("2012-04-07T09:00:04");
@@ -51,6 +53,7 @@ function App() {
   const [idsData, setIDSData] = useState<IDSData[]>([]);
   const [filteredIDSData, setFilteredIDSData] = useState<IDSData[]>([]);
   const [selectedIDSFilters, setSelectedIDSFilters] = useState(initialIDSFilters);
+  const [timeWindow, setTimeWindow] = useState<TimeWindow>({ start: startTime, end: endTime });
   const [uniqueIDSValues, setUniqueIDSValues] = useState({
     sourcePort: [] as string[],
     destinationPort: [] as string[],
@@ -82,6 +85,7 @@ function App() {
       setIDSData(data);
       setFilteredIDSData(data);
       extractUniqueIDSValues(data);
+      setTimeWindow({ start: start, end: end });
     } catch (error) {
       console.error("Error fetching IDS data:", error);
     }
@@ -110,6 +114,7 @@ function App() {
       setFirewallData(data);
       setFilteredFirewallData(data);
       extractUniqueFirewallValues(data);
+      setTimeWindow({ start: start, end: end });
     } catch (error) {
       console.error("Error fetching Firewall data:", error);
     }
@@ -235,5 +240,4 @@ const applyIDSFilters = () => {
     </div>
   );
 }
-
 export default App;

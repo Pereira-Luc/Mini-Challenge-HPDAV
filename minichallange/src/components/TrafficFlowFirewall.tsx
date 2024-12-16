@@ -1,10 +1,6 @@
-import { SetStateAction, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getFirewallDataByDateTimeRange } from "../util/fetchers";
-import { FirewallData, MergedData } from "../util/interface";
-import TrafficFlowVisualizationFirewall from "./TrafficFlowVisualizationFirewall";
-import Filters from "./filters";
-import DaySelector from "./DaySelector";
-import TimeIntervalControls from "./TimeIntervalControls";
+import { FirewallData } from "../util/interface";
 
 const MIN_TIME = new Date("2012-04-05T17:51:26");
 const MAX_TIME = new Date("2012-04-07T09:00:04");
@@ -140,31 +136,7 @@ const TrafficFlowFirewall = () => {
     const isAtStart = new Date(startTime).getTime() <= Math.max(new Date(`${selectedDay}T00:00:00`).getTime(), MIN_TIME.getTime());
     const isAtEnd = new Date(endTime).getTime() >= Math.min(new Date(`${selectedDay}T23:59:59`).getTime(), MAX_TIME.getTime());
 
-    return (
-        <div style={{ width: "100%", height: "100vh", padding: "20px" }}>
-            <h1>Dynamic Traffic Flow</h1>
-            <div style={{ marginBottom: "20px" }}>
-                <label htmlFor="intervalSize">Interval Size (minutes): </label>
-                <input
-                    type="range"
-                    id="intervalSize"
-                    min="1"
-                    max="60"
-                    value={intervalSize}
-                    onChange={(e) => setIntervalSize(Number(e.target.value))}
-                />
-                <span>{intervalSize} minutes</span>
-            </div>
 
-            {/* Visualization Component */}
-            <TrafficFlowVisualizationFirewall 
-            data={filteredData} 
-            filter={null} 
-/>
-
-        </div>
-    );
-};
 
 // Helper function for consistent ISO formatting
 const formatDateToISO = (date: Date): string => {
@@ -173,5 +145,5 @@ const formatDateToISO = (date: Date): string => {
         date.getMinutes()
     )}:${pad(date.getSeconds())}`;
 };
-
+};
 export default TrafficFlowFirewall;
