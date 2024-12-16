@@ -53,7 +53,7 @@ function App() {
   const [idsData, setIDSData] = useState<IDSData[]>([]);
   const [filteredIDSData, setFilteredIDSData] = useState<IDSData[]>([]);
   const [selectedIDSFilters, setSelectedIDSFilters] = useState(initialIDSFilters);
-  const [timeWindow, setTimeWindow] = useState<TimeWindow>({ start: startTime, end: endTime });
+  //const [timeWindow, setTimeWindow] = useState<TimeWindow>({ start: startTime, end: endTime });
   const [uniqueIDSValues, setUniqueIDSValues] = useState({
     sourcePort: [] as string[],
     destinationPort: [] as string[],
