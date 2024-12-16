@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { FirewallData, ParallelCoordinatesPlotProps } from "../util/interface";
+import { FirewallData, IDSData, ParallelCoordinatesPlotProps } from "../util/interface";
 import * as d3 from "d3";
 
 // Keep IP utilities
@@ -23,13 +23,21 @@ const getSubnet = (ip: string, mask: number = 24): string => {
     return intToIp(ipInt & maskBits);
 };
 
+const getDimensionValues = (data: AggregatedData, dim: string): any[] => {
+    if (dim === "DateTime") {
+        return [data.DateTime.min, data.DateTime.max];
+    }
+    const value = data[dim as keyof AggregatedData];
+    return Array.isArray(value) ? value : [value];
+  };
+
 // Keep AggregatedData type
 type AggregatedData = {
     subnet: string;
     count: number;
     SourceIP: string;
     DestinationIP: string[];
-    DestinationPort: number[];
+    DestinationPort: string[];
     Direction: string[];
     DateTime: {
         min: Date;
@@ -39,14 +47,16 @@ type AggregatedData = {
 };
 
 // Keep merging logic
-const mergeData = (items: FirewallData[]): AggregatedData => {
+const mergeData = (items: FirewallData[] | IDSData[]): AggregatedData => {
     return {
         subnet: getSubnet(items[0].SourceIP),
         count: items.length,
         SourceIP: getSubnet(items[0].SourceIP),
         DestinationIP: [...new Set(items.map(item => item.DestinationIP))],
         DestinationPort: [...new Set(items.map(item => item.DestinationPort))],
-        Direction: [...new Set(items.map(item => item.Direction))],
+        Direction: items.length > 0 && 'Direction' in items[0] 
+            ? [...new Set(items.map(item => item.Direction))]
+            : ['N/A'],
         DateTime: {
             min: new Date(Math.min(...items.map(item => new Date(item.DateTime).getTime()))),
             max: new Date(Math.max(...items.map(item => new Date(item.DateTime).getTime())))
@@ -61,10 +71,10 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
     timeWindow,
     mgData
 }) => {
-    const dimensions = ["DateTime", "SourceIP", "DestinationPort", "DestinationIP", "Direction"];
+    //const dimensions = ["DateTime", "SourceIP", "DestinationPort", "DestinationIP", "Direction"];
     const svgRef = useRef<SVGSVGElement | null>(null);
-    const [selectedRanges, setSelectedRanges] = useState<{[key: string]: [number, number] | null}>({});
-
+    //const [selectedRanges, setSelectedRanges] = useState<{[key: string]: [number, number] | null}>({});
+    console.log(timeWindow);
 
     useEffect(() => {
         if (!mgData) return;
@@ -72,14 +82,17 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
         // Group by subnet and merge
         const subnetGroups = mgData.reduce((acc, data) => {
             const subnet = getSubnet(data.SourceIP);
-            if (!acc[subnet]) {
-                acc[subnet] = [];
-            }
+
+            if (!acc[subnet]) { acc[subnet] = []; }
+            
             acc[subnet].push(data);
+
             return acc;
         }, {} as { [key: string]: FirewallData[] });
     
         const mergedData = Object.values(subnetGroups).map(items => mergeData(items));
+        const dimensions = ["DateTime", "SourceIP", "DestinationPort", "DestinationIP"]
+            .concat(mgData.length > 0 && 'Direction' in mgData[0] ? ["Direction"] : []);
         generateParallelCoordinatesPlot(mergedData, dimensions, width, height);
 
     }, [mgData, width, height]);
@@ -129,14 +142,9 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
             // For each combination of values between dimensions
             dimensions.forEach((dim, i) => {
                 if (i < dimensions.length - 1) {
-                    const currentValues = dim === "DateTime" ? [d.DateTime.min, d.DateTime.max] :
-                        Array.isArray(d[dim as keyof AggregatedData]) ? 
-                            d[dim as keyof AggregatedData] : [d[dim as keyof AggregatedData]];
-                    
+                    const currentValues = getDimensionValues(d, dim);
                     const nextDim = dimensions[i + 1];
-                    const nextValues = nextDim === "DateTime" ? [d.DateTime.min, d.DateTime.max] :
-                        Array.isArray(d[nextDim as keyof AggregatedData]) ?
-                            d[nextDim as keyof AggregatedData] : [d[nextDim as keyof AggregatedData]];
+                    const nextValues = getDimensionValues(d, nextDim);
 
                     currentValues.forEach(v1 => {
                         nextValues.forEach(v2 => {
@@ -168,69 +176,37 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
                 .text(dim);
         });
 
+        // Add brushing
         dimensions.forEach(dim => {
             const brush = d3.brushY()
                 .extent([[xScale(dim)! - 10, 0], [xScale(dim)! + 10, height]])
-                .on("brush end", (event) => {
-                    const selection = event.selection as [number, number] | null;
+                .on("brush end", (event: d3.D3BrushEvent<any>) => {
+                    if (!event.selection) {
+                        // Reset all lines opacity when brush is cleared
+                        svg.selectAll("path").style("opacity", 0.3);
+                        return;
+                    }
                     
-                    // Update selected ranges
-                    setSelectedRanges(prev => ({
-                        ...prev,
-                        [dim]: selection
-                    }));
-        
-                    // Update line colors
-                    g.selectAll("path")
-                        .style("stroke", (d: any) => {
-                            // Check if line passes through any selected range
-                            const isSelected = Object.entries(selectedRanges).every(([dimension, range]) => {
-                                if (!range) return true; // No selection for this dimension
-        
-                                const values = dimension === "DateTime" ? 
-                                    [d[0][1], d[1][1]] : // Use actual y coordinates
-                                    [d[0][1], d[1][1]];
-        
-                                return values.some(v => v >= range[0] && v <= range[1]);
+                    const selection = event.selection as [number, number];
+                    
+                    // Update visual feedback
+                    svg.selectAll("path")
+                        .style("opacity", 0.1) // Dim all lines
+                        .filter((d: any) => {
+                            const values = getDimensionValues(d, dim);
+                            return values.some((val: any) => {
+                                const yVal = yScales[dim](dim === "DateTime" ? new Date(val) : val);
+                                if (yVal === undefined) return false;
+                                return yVal >= selection[0] && yVal <= selection[1];
                             });
-        
-                            return isSelected ? "white" : "steelblue";
                         })
-                        .style("stroke-opacity", (d: any) => {
-                            const isSelected = Object.values(selectedRanges).some(range => range !== null);
-                            if (!isSelected) return 0.3; // Default opacity
-                            
-                            // Check if line passes through all selected ranges
-                            const passesThrough = Object.entries(selectedRanges).every(([dimension, range]) => {
-                                if (!range) return true;
-        
-                                const values = dimension === "DateTime" ? 
-                                    [d[0][1], d[1][1]] :
-                                    [d[0][1], d[1][1]];
-        
-                                return values.some(v => v >= range[0] && v <= range[1]);
-                            });
-        
-                            return passesThrough ? 0.8 : 0.1;
-                        });
+                        .style("opacity", 0.7); // Highlight filtered lines
                 });
         
             g.append("g")
-                .attr("class", "brush")
+                .attr("class", `brush ${dim}`)
                 .call(brush);
         });
-        
-        // Add background for contrast
-        svg.append("rect")
-            .attr("width", width)
-            .attr("height", height)
-            .attr("fill", "#333")
-            .attr("opacity", 0.1);
-        
-        // Add style for brushed areas
-        g.selectAll(".brush rect.selection")
-            .style("fill", "rgba(255, 255, 255, 0.1)")
-            .style("stroke", "white");
     };
 
     return (
