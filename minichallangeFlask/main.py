@@ -51,8 +51,8 @@ def firewall_data_by_date_time():
 # Route for IDS data by date range
 @app.route('/idsDataByDateTime', methods=['GET'])
 def ids_data_by_date_time():
-    start_datetime = request.args.get('start')
-    end_datetime = request.args.get('end')
+    start_datetime = request.args.get('start_datetime')
+    end_datetime = request.args.get('end_datetime')
 
     if not start_datetime or not end_datetime:
         return jsonify({

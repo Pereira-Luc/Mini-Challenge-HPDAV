@@ -44,8 +44,8 @@ const getFirewallDataByDateTimeRange = async (start: string, end: string) => {
     try {
         const response = await axios.get('http://127.0.0.1:5000/firewallDataByDateTime', {
             params: { 
-                start: start, 
-                end: end 
+                start_datetime: start, 
+                end_datetime: end 
             }
         });
 
@@ -63,7 +63,7 @@ const getFirewallDataByDateTimeRange = async (start: string, end: string) => {
 // Fetch IDS data (replace this with your actual fetcher)
 const getIDSDataByDateTimeRange = async (start: string, end: string): Promise<IDSData[]> => {
     try {
-        const response = await fetch(`http://127.0.0.1:5000/idsDataByDateTime?start=${start}&end=${end}`);
+        const response = await fetch(`http://127.0.0.1:5000/idsDataByDateTime?start_datetime=${start}&end_datetime=${end}`);
         if (!response.ok) throw new Error("Failed to fetch IDS data");
         const data: IDSData[] = await response.json();
         return data;
