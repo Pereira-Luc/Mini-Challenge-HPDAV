@@ -5,6 +5,9 @@ import Filters from "./components/filters";
 import DaySelector from "./components/DaySelector";
 import TimeIntervalControls from "./components/TimeIntervalControls";
 import TrafficFlow from "./components/TrafficFlow";
+import ParallelCoordinatesPlot from "./components/ParallelCoordinatesPlot";
+
+import HistContainer from "./components/hist/HistContainer.jsx";
 
 const MIN_TIME = new Date("2012-04-05T17:51:26");
 const MAX_TIME = new Date("2012-04-07T09:00:04");
@@ -147,8 +150,9 @@ const App = () => {
                   setEndTime(newEndTime);
                 }
             }
-            />
-            <TrafficFlow data={filteredData} />
+        />
+        <HistContainer />
+
         </div>
     );
 };
