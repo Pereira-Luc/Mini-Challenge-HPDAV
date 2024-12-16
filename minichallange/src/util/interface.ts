@@ -32,6 +32,10 @@ export interface IDSData {
 }
 
 export interface MergedData {
+    Betweenness: any;
+    Eigenvector: any;
+    Degree: any;
+    Closeness: any;
     DateTime: Date;                 // From FirewallData
     SourceIP: string;               // Shared between IDS and firewall
     DestinationIP: string;          // Shared between IDS and firewall

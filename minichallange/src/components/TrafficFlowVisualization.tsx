@@ -247,9 +247,13 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
                 ref={canvasRef}
                 width={1800}
                 height={1200}
-                style={{ border: "1px solid black", cursor: loading ? "not-allowed" : "grab" }}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
+                style={{
+                    border: "1px solid black",
+                    cursor: loading ? "not-allowed" : "grab", // Change cursor during loading
+                    pointerEvents: loading ? "none" : "auto", // Disable interactions
+                }}
+                onMouseDown={!loading ? handleMouseDown : undefined} // Disable dragging
+                onMouseMove={!loading ? handleMouseMove : undefined} // Disable cursor tracking
             ></canvas>
         </div>
     );

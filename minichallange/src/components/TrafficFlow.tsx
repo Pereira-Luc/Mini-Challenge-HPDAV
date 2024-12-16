@@ -144,46 +144,7 @@ const TrafficFlow = () => {
                     item.DestinationIP?.includes(ipFilter)
             );
             console.log("After ipAddress filter:", filtered);
-        }
-    
-        // Numeric filters (e.g., degree, closeness)
-        if (filters.degree.min !== 0 || filters.degree.max !== 100) {
-            console.log("Before degree filter:", filtered);
-            filtered = filtered.filter(
-                (item) =>
-                    item.Degree >= filters.degree.min &&
-                    item.Degree <= filters.degree.max
-            );
-            console.log("After degree filter:", filtered);
-        }
-        if (filters.closeness.min !== 0 || filters.closeness.max !== 1) {
-            console.log("Before closeness filter:", filtered);
-            filtered = filtered.filter(
-                (item) =>
-                    item.Closeness >= filters.closeness.min &&
-                    item.Closeness <= filters.closeness.max
-            );
-            console.log("After closeness filter:", filtered);
-        }
-        if (filters.betweenness.min !== 0 || filters.betweenness.max !== 1) {
-            console.log("Before betweenness filter:", filtered);
-            filtered = filtered.filter(
-                (item) =>
-                    item.Betweenness >= filters.betweenness.min &&
-                    item.Betweenness <= filters.betweenness.max
-            );
-            console.log("After betweenness filter:", filtered);
-        }
-        if (filters.eigenvector.min !== 0 || filters.eigenvector.max !== 1) {
-            console.log("Before eigenvector filter:", filtered);
-            filtered = filtered.filter(
-                (item) =>
-                    item.Eigenvector >= filters.eigenvector.min &&
-                    item.Eigenvector <= filters.eigenvector.max
-            );
-            console.log("After eigenvector filter:", filtered);
-        }
-    
+        }    
         console.log("Filtered Data:", filtered); // Debug final filtered result
         setFilteredData(filtered);
     };
@@ -231,6 +192,18 @@ const TrafficFlow = () => {
         setEndTime(formatDateToISO(newEnd));
     };
 
+    const handleAcceptTime = (acceptedStartTime: string, acceptedEndTime: string) => {
+        console.log("Accepted Time Range:", { start: acceptedStartTime, end: acceptedEndTime });
+    
+        // Example: Updating state or triggering other actions
+        setStartTime(`${selectedDay}T${acceptedStartTime}`);
+        setEndTime(`${selectedDay}T${acceptedEndTime}`);
+    
+        // Example: Fetch new data based on accepted time range
+        fetchData(`${selectedDay}T${acceptedStartTime}`, `${selectedDay}T${acceptedEndTime}`);
+    };
+    
+
     const isAtStart = new Date(startTime).getTime() <= Math.max(new Date(`${selectedDay}T00:00:00`).getTime(), MIN_TIME.getTime());
     const isAtEnd = new Date(endTime).getTime() >= Math.min(new Date(`${selectedDay}T23:59:59`).getTime(), MAX_TIME.getTime());
 
@@ -260,8 +233,12 @@ const TrafficFlow = () => {
                 isAtStart={isAtStart}
                 isAtEnd={isAtEnd}
                 onIntervalChange={handleTimeIntervalChange}
-            />
-            {/* Slider for Interval Size */}
+                onTimeChange={(newStartTime, newEndTime) =>
+                    console.log("Updated times:", { newStartTime, newEndTime })
+                }
+                onAcceptTime={handleAcceptTime}
+                />
+                {/* Slider for Interval Size */}
             <div style={{ marginBottom: "20px" }}>
                 <label htmlFor="intervalSize">Interval Size (minutes): </label>
                 <input

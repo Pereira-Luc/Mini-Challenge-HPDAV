@@ -26,6 +26,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ progress, message = "Lo
             <div
                 style={{
                     width: "80%",
+                    maxWidth: "400px", // Limit the width to a maximum value
                     height: "10px",
                     background: "#ddd",
                     borderRadius: "5px",

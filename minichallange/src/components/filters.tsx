@@ -18,10 +18,6 @@ interface FiltersProps {
         priority: string;
         classification: string;
         ipAddress: string;
-        degree: { min: number; max: number };
-        closeness: { min: number; max: number };
-        betweenness: { min: number; max: number };
-        eigenvector: { min: number; max: number };
     };
 
     
@@ -112,105 +108,6 @@ const Filters: React.FC<FiltersProps> = ({
                     onChange={(e) => onFilterChange("ipAddress", e.target.value)}
                 />
             </label>
-
-            {/* New Metric-Based Filters */}
-            <h4>Node Metrics</h4>
-            <label>Degree Range: </label>
-            <input
-                type="number"
-                placeholder="Min"
-                value={selectedFilters.degree.min}
-                onChange={(e) =>
-                    onFilterChange("degree", {
-                        ...selectedFilters.degree,
-                        min: Number(e.target.value),
-                    })
-                }
-            />
-            <input
-                type="number"
-                placeholder="Max"
-                value={selectedFilters.degree.max}
-                onChange={(e) =>
-                    onFilterChange("degree", {
-                        ...selectedFilters.degree,
-                        max: Number(e.target.value),
-                    })
-                }
-            />
-
-            <label>Closeness Centrality Range: </label>
-            <input
-                type="number"
-                placeholder="Min"
-                value={selectedFilters.closeness.min}
-                onChange={(e) =>
-                    onFilterChange("closeness", {
-                        ...selectedFilters.closeness,
-                        min: Number(e.target.value),
-                    })
-                }
-            />
-            <input
-                type="number"
-                placeholder="Max"
-                value={selectedFilters.closeness.max}
-                onChange={(e) =>
-                    onFilterChange("closeness", {
-                        ...selectedFilters.closeness,
-                        max: Number(e.target.value),
-                    })
-                }
-            />
-
-            <label>Betweenness Centrality Range: </label>
-            <input
-                type="number"
-                placeholder="Min"
-                value={selectedFilters.betweenness.min}
-                onChange={(e) =>
-                    onFilterChange("betweenness", {
-                        ...selectedFilters.betweenness,
-                        min: Number(e.target.value),
-                    })
-                }
-            />
-            <input
-                type="number"
-                placeholder="Max"
-                value={selectedFilters.betweenness.max}
-                onChange={(e) =>
-                    onFilterChange("betweenness", {
-                        ...selectedFilters.betweenness,
-                        max: Number(e.target.value),
-                    })
-                }
-            />
-
-            <label>Eigenvector Centrality Range: </label>
-            <input
-                type="number"
-                placeholder="Min"
-                value={selectedFilters.eigenvector.min}
-                onChange={(e) =>
-                    onFilterChange("eigenvector", {
-                        ...selectedFilters.eigenvector,
-                        min: Number(e.target.value),
-                    })
-                }
-            />
-            <input
-                type="number"
-                placeholder="Max"
-                value={selectedFilters.eigenvector.max}
-                onChange={(e) =>
-                    onFilterChange("eigenvector", {
-                        ...selectedFilters.eigenvector,
-                        max: Number(e.target.value),
-                    })
-                }
-            />
-
             <button
                 onClick={() => onApplyFilters(selectedFilters)}
                 style={{ marginLeft: "10px", padding: "5px 10px" }}
