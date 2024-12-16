@@ -1,119 +1,179 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 interface FiltersProps {
-    uniqueValues: {
-        protocol: string[];
+    uniqueIDSValues: {
         sourcePort: string[];
         destinationPort: string[];
         priority: string[];
         classification: string[];
+        label: string[];
+    };
+    uniqueFirewallValues: {
+        sourcePort: string[];
+        destinationPort: string[];
+        protocol: string[];
     };
     onFilterChange: (field: string, value: string | { min: number; max: number }) => void;
-    
     onApplyFilters: (filters: any) => void;
-    selectedFilters: {
-        protocol: string;
+    selectedIDSFilters: {
         sourcePort: string;
         destinationPort: string;
         priority: string;
         classification: string;
         ipAddress: string;
     };
-
-    
+    selectedFirewallFilters: {
+        sourcePort: string;
+        destinationPort: string;
+        protocol: string;
+        ipAddress: string;
+    };
 }
 
 const Filters: React.FC<FiltersProps> = ({
-    uniqueValues,
+    uniqueIDSValues,
+    uniqueFirewallValues,
     onFilterChange,
     onApplyFilters,
-    selectedFilters,
+    selectedIDSFilters,
+    selectedFirewallFilters,
 }) => {
     return (
         <div style={{ marginBottom: "20px" }}>
             <h3>Filters</h3>
 
-            {/* Existing Filters */}
-            <label>Protocol: </label>
-            <select
-                value={selectedFilters.protocol}
-                onChange={(e) => onFilterChange("protocol", e.target.value)}
-            >
-                <option value="">All</option>
-                {uniqueValues.protocol.map((protocol) => (
-                    <option key={protocol} value={protocol}>
-                        {protocol}
-                    </option>
-                ))}
-            </select>
+            {/* IDS Filters Section */}
+            <div style={{ marginBottom: "20px" }}>
+                <h4>IDS Filters</h4>
+                <label>Source Port: </label>
+                <select
+                    value={selectedIDSFilters.sourcePort}
+                    onChange={(e) => onFilterChange("ids_sourcePort", e.target.value)}
+                >
+                    <option value="">All</option>
+                    {uniqueIDSValues.sourcePort.map((port) => (
+                        <option key={port} value={port}>
+                            {port}
+                        </option>
+                    ))}
+                </select>
 
-            <label>Source Port: </label>
-            <select
-                value={selectedFilters.sourcePort}
-                onChange={(e) => onFilterChange("sourcePort", e.target.value)}
-            >
-                <option value="">All</option>
-                {uniqueValues.sourcePort.map((port) => (
-                    <option key={port} value={port}>
-                        {port}
-                    </option>
-                ))}
-            </select>
+                <label>Destination Port: </label>
+                <select
+                    value={selectedIDSFilters.destinationPort}
+                    onChange={(e) => onFilterChange("ids_destinationPort", e.target.value)}
+                >
+                    <option value="">All</option>
+                    {uniqueIDSValues.destinationPort.map((port) => (
+                        <option key={port} value={port}>
+                            {port}
+                        </option>
+                    ))}
+                </select>
 
-            <label>Destination Port: </label>
-            <select
-                value={selectedFilters.destinationPort}
-                onChange={(e) => onFilterChange("destinationPort", e.target.value)}
-            >
-                <option value="">All</option>
-                {uniqueValues.destinationPort.map((port) => (
-                    <option key={port} value={port}>
-                        {port}
-                    </option>
-                ))}
-            </select>
+                <label>Priority: </label>
+                <select
+                    value={selectedIDSFilters.priority}
+                    onChange={(e) => onFilterChange("ids_priority", e.target.value)}
+                >
+                    <option value="">All</option>
+                    {uniqueIDSValues.priority.map((priority) => (
+                        <option key={priority} value={priority}>
+                            {priority}
+                        </option>
+                    ))}
+                </select>
 
-            <label>Priority: </label>
-            <select
-                value={selectedFilters.priority}
-                onChange={(e) => onFilterChange("priority", e.target.value)}
-            >
-                <option value="">All</option>
-                {uniqueValues.priority.map((priority) => (
-                    <option key={priority} value={priority}>
-                        {priority}
-                    </option>
-                ))}
-            </select>
+                <label>Classification: </label>
+                <select
+                    value={selectedIDSFilters.classification}
+                    onChange={(e) => onFilterChange("ids_classification", e.target.value)}
+                >
+                    <option value="">All</option>
+                    {uniqueIDSValues.classification.map((classification) => (
+                        <option key={classification} value={classification}>
+                            {classification}
+                        </option>
+                    ))}
+                </select>
 
-            <label>Classification: </label>
-            <select
-                value={selectedFilters.classification}
-                onChange={(e) => onFilterChange("classification", e.target.value)}
-            >
-                <option value="">All</option>
-                {uniqueValues.classification.map((classification) => (
-                    <option key={classification} value={classification}>
-                        {classification}
-                    </option>
-                ))}
-            </select>
+                <label>
+                    IP Address:
+                    <input
+                        type="text"
+                        placeholder="e.g., 192.168.1.1"
+                        value={selectedIDSFilters.ipAddress}
+                        onChange={(e) => onFilterChange("ids_ipAddress", e.target.value)}
+                    />
+                </label>
 
-            <label>
-                IP Address:
-                <input
-                    type="text"
-                    placeholder="e.g., 192.168.1.1"
-                    value={selectedFilters.ipAddress}
-                    onChange={(e) => onFilterChange("ipAddress", e.target.value)}
-                />
-            </label>
-            <button
-                onClick={() => onApplyFilters(selectedFilters)}
-                style={{ marginLeft: "10px", padding: "5px 10px" }}
-            >
-                Apply Filters
-            </button>
+                <button
+                    onClick={() => onApplyFilters(selectedIDSFilters)}
+                    style={{ marginLeft: "10px", padding: "5px 10px" }}
+                >
+                    Apply IDS Filters
+                </button>
+            </div>
+
+            {/* Firewall Filters Section */}
+            <div>
+                <h4>Firewall Filters</h4>
+                <label>Source Port: </label>
+                <select
+                    value={selectedFirewallFilters.sourcePort}
+                    onChange={(e) => onFilterChange("fw_sourcePort", e.target.value)}
+                >
+                    <option value="">All</option>
+                    {uniqueFirewallValues.sourcePort.map((port) => (
+                        <option key={port} value={port}>
+                            {port}
+                        </option>
+                    ))}
+                </select>
+
+                <label>Destination Port: </label>
+                <select
+                    value={selectedFirewallFilters.destinationPort}
+                    onChange={(e) => onFilterChange("fw_destinationPort", e.target.value)}
+                >
+                    <option value="">All</option>
+                    {uniqueFirewallValues.destinationPort.map((port) => (
+                        <option key={port} value={port}>
+                            {port}
+                        </option>
+                    ))}
+                </select>
+
+                <label>Protocol: </label>
+                <select
+                    value={selectedFirewallFilters.protocol}
+                    onChange={(e) => onFilterChange("fw_protocol", e.target.value)}
+                >
+                    <option value="">All</option>
+                    {uniqueFirewallValues.protocol.map((protocol) => (
+                        <option key={protocol} value={protocol}>
+                            {protocol}
+                        </option>
+                    ))}
+                </select>
+
+                <label>
+                    IP Address:
+                    <input
+                        type="text"
+                        placeholder="e.g., 192.168.1.1"
+                        value={selectedFirewallFilters.ipAddress}
+                        onChange={(e) => onFilterChange("fw_ipAddress", e.target.value)}
+                    />
+                </label>
+
+                <button
+                    onClick={() => onApplyFilters(selectedFirewallFilters)}
+                    style={{ marginLeft: "10px", padding: "5px 10px" }}
+                >
+                    Apply Firewall Filters
+                </button>
+            </div>
         </div>
     );
 };

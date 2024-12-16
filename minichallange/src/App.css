@@ -8,6 +8,21 @@
   height: 100vh; /* Occupy the full viewport */
 }
 
+.container {
+  display: flex;
+  justify-content: space-between; /* Ensures equal spacing between items */
+  align-items: flex-start; /* Align items to the top */
+  gap: 20px; /* Add spacing between the components */
+  padding: 20px; /* Add some padding around the container */
+}
+
+.child {
+  flex: 1; /* Ensure each child takes an equal width */
+  min-width: 300px; /* Prevent the components from shrinking too much */
+  border: 1px solid #ccc; /* Optional: Add a border for better visualization */
+  padding: 10px; /* Add padding inside each child */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: Add shadow for styling */
+}
 
 
 .logo {
