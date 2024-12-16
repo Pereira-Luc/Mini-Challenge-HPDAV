@@ -3,7 +3,7 @@ import {getFirewallDataByDateTimeRange} from "../util/fetchers";
 import {FirewallData, ParallelCoordinatesPlotProps} from "../util/interface";
 import * as d3 from "d3";
 
-const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({width, height, startDate, endDate, timeWindow}) => {
+const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({width, height, timeWindow}) => {
     const [firewallData, setFirewallData] = useState<FirewallData[]>([]);
     const dimensions: Array<keyof FirewallData> = ["DateTime", "SourceIP","DestinationPort","DestinationIP", "Direction"];
     const svgRef = useRef<SVGSVGElement | null>(null);
