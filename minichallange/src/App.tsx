@@ -13,12 +13,16 @@ import ParallelCoordinatesPlot from "./components/ParallelCoordinatesPlot";
 
 import TrafficFlowVisualizationIDS from "./components/TrafficFlowVisualizationIDS";
 import TrafficFlowVisualizationFirewall from "./components/TrafficFlowVisualizationFirewall"
+import CategorySelector from "./components/CategorySelector";
 
+import { fetchAllCategoryData } from "./util/fetchers";
 
 enum GraphType {
   ParallelCoordinatesPlot = "ParallelCoordinatesPlot",
   TraficFlow = "TraficFlow",
 }
+
+
 
 
 const MIN_TIME = new Date("2012-04-05T17:51:26");
@@ -77,8 +81,33 @@ function App() {
     sourcePort: [] as string[],
     destinationPort: [] as string[],
   });
+  const [enableMasking, setEnableMasking] = useState(true);
 
   const [displayedGraph, setDisplayedGraph] = useState(GraphType.TraficFlow);
+
+  const [selectedCategory, setSelectedCategory] = useState<IPCategory | ''>('');
+
+  const fetchCategoryData = async (start: string, end: string) => {
+    try {
+      if (selectedCategory) {
+        const data = await fetchAllCategoryData(selectedCategory, start, end);
+        
+        // Update IDS data
+        setIDSData(data.ids);
+        setFilteredIDSData(data.ids);
+        extractUniqueIDSValues(data.ids);
+        
+        // Update Firewall data
+        setFirewallData(data.firewall);
+        setFilteredFirewallData(data.firewall);
+        extractUniqueFirewallValues(data.firewall);
+        
+        setTimeWindow({ start, end });
+      }
+    } catch (error) {
+      console.error("Error fetching category data:", error);
+    }
+  };
   
 
   // Date and Time States
@@ -205,9 +234,13 @@ const applyIDSFilters = () => {
 
   // Fetch Data on Time Change
   useEffect(() => {
-    fetchIDSData(startTime, endTime);
-    fetchFirewallData(startTime, endTime);
-  }, [startTime, endTime]);
+    if (selectedCategory) {
+      fetchCategoryData(startTime, endTime);
+    } else {
+      fetchIDSData(startTime, endTime);
+      fetchFirewallData(startTime, endTime);
+    }
+  }, [startTime, endTime, selectedCategory]);
 
   return (
     <div style={{ width: "100%", height: "100vh", padding: "20px" }}>
@@ -247,15 +280,25 @@ const applyIDSFilters = () => {
           <option value={GraphType.ParallelCoordinatesPlot}>Parallel Coordinates</option>
           <option value={GraphType.TraficFlow}>Traffic Flow</option>
         </select>
+        <label>
+          <input 
+            type="checkbox" 
+            checked={enableMasking}
+            onChange={(e) => setEnableMasking(e.target.checked)} 
+          />
+          Masking
+        </label>
+        
+        <CategorySelector selectedCategory={selectedCategory} onCategoryChange={setSelectedCategory} />
 
         <div className="container">
           {displayedGraph === GraphType.ParallelCoordinatesPlot ? (
             <>
               <div className="child">
-                <ParallelCoordinatesPlot width={800} height={400} timeWindow={timeWindow} mgData={filteredIDSData} />
+                <ParallelCoordinatesPlot width={800} height={400} timeWindow={timeWindow} mgData={filteredIDSData} enableMasking={ enableMasking } />
               </div>
               <div className="child">
-                <ParallelCoordinatesPlot width={800} height={400} timeWindow={timeWindow} mgData={filteredFirewallData} />
+                <ParallelCoordinatesPlot width={800} height={400} timeWindow={timeWindow} mgData={filteredFirewallData} enableMasking={ enableMasking } />
               </div>
             </>
           ) : (

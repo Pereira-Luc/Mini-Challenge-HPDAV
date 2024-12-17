@@ -64,9 +64,22 @@ export interface ParallelCoordinatesPlotProps {
     height: number;
     timeWindow?: TimeWindow;
     mgData?: FirewallData[] | IDSData[];
+    enableMasking?: boolean;
 }
 
 export interface TimeWindow {
     start: string;
     end: string;
 }
+
+export enum IPCategory {
+    Firewalls = 'Firewalls',
+    IDS = 'IDS',
+    Financial_Servers = 'Financial_Servers',
+    Core_Servers = 'Core_Servers',
+    Websites = 'Websites',
+    Workstations = 'Workstations',
+    Anomalies = 'Anomalies'
+}
+
+export type CategoryTrafficSource = 'firewall' | 'ids';

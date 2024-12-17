@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FirewallData, IDSData, MergedData } from './interface';
+import { CategoryTrafficSource, FirewallData, IDSData, IPCategory, MergedData } from './interface';
 import { createAsyncThunk } from '@reduxjs/toolkit/react';
 
 // Fetch data template
@@ -156,6 +156,59 @@ const getMergedDataByDateTimeRange = async (start: string, end: string): Promise
         return mergedData;
     } catch (error) {
         console.error("Error merging data:", error);
+        throw error;
+    }
+};
+
+export const fetchCategoryTraffic = async (
+    source: CategoryTrafficSource,
+    category: IPCategory,
+    startDateTime?: string,
+    endDateTime?: string
+): Promise<FirewallData[] | IDSData[]> => {
+    try {
+        const baseUrl = `http://localhost:5000/categoryTraffic/${source}/${category}`;
+        const params = new URLSearchParams();
+
+        if (startDateTime) params.append('start_datetime', startDateTime);
+        if (endDateTime) params.append('end_datetime', endDateTime);
+
+        const url = `${baseUrl}${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || `Failed to fetch ${source} ${category} data`);
+        }
+
+        const data = await response.json();
+        return data || [];
+    } catch (error) {
+        console.error(`Error fetching ${source} ${category} data:`, error);
+        throw error;
+    }
+};
+
+export const fetchAllCategoryData = async (
+    category: IPCategory,
+    startDateTime?: string,
+    endDateTime?: string
+): Promise<{
+    firewall: FirewallData[],
+    ids: IDSData[]
+}> => {
+    try {
+        const [firewallData, idsData] = await Promise.all([
+            fetchCategoryTraffic('firewall', category, startDateTime, endDateTime),
+            fetchCategoryTraffic('ids', category, startDateTime, endDateTime)
+        ]);
+
+        return {
+            firewall: firewallData as FirewallData[],
+            ids: idsData as IDSData[]
+        };
+    } catch (error) {
+        console.error(`Error fetching all ${category} data:`, error);
         throw error;
     }
 };

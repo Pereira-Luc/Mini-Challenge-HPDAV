@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { FirewallData, IDSData, ParallelCoordinatesPlotProps } from "../util/interface";
 import * as d3 from "d3";
 
-// Keep IP utilities
 const ipToInt = (ip: string): number => {
     return ip.split('.')
         .reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0);
@@ -23,15 +22,26 @@ const getSubnet = (ip: string, mask: number = 24): string => {
     return intToIp(ipInt & maskBits);
 };
 
-const getDimensionValues = (data: AggregatedData, dim: string): any[] => {
+const getRegularDimensionValues = (data: FirewallData | IDSData, dim: string): any => {
     if (dim === "DateTime") {
-        return [data.DateTime.min, data.DateTime.max];
+        return new Date(data.DateTime);
     }
-    const value = data[dim as keyof AggregatedData];
-    return Array.isArray(value) ? value : [value];
-  };
+    return data[dim as keyof (FirewallData | IDSData)];
+};
 
-// Keep AggregatedData type
+const getDimensionValues = (data: AggregatedData | FirewallData | IDSData, dim: string): any[] => {
+    if ('subnet' in data) { // Check if it's AggregatedData
+        if (dim === "DateTime") {
+            return [data.DateTime.min, data.DateTime.max];
+        }
+        const value = data[dim as keyof AggregatedData];
+        return Array.isArray(value) ? value : [value];
+    } else {
+        const value = getRegularDimensionValues(data, dim);
+        return [value];
+    }
+};
+
 type AggregatedData = {
     subnet: string;
     count: number;
@@ -46,7 +56,6 @@ type AggregatedData = {
     originalIPs: string[];
 };
 
-// Keep merging logic
 const mergeData = (items: FirewallData[] | IDSData[]): AggregatedData => {
     return {
         subnet: getSubnet(items[0].SourceIP),
@@ -69,36 +78,36 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
     width,
     height,
     timeWindow,
-    mgData
+    mgData,
+    enableMasking = true
 }) => {
-    //const dimensions = ["DateTime", "SourceIP", "DestinationPort", "DestinationIP", "Direction"];
     const svgRef = useRef<SVGSVGElement | null>(null);
-    //const [selectedRanges, setSelectedRanges] = useState<{[key: string]: [number, number] | null}>({});
-    console.log(timeWindow);
 
     useEffect(() => {
-        if (!mgData) return;
+        if (!mgData || mgData.length === 0) return;
 
-        // Group by subnet and merge
-        const subnetGroups = mgData.reduce((acc, data) => {
-            const subnet = getSubnet(data.SourceIP);
-
-            if (!acc[subnet]) { acc[subnet] = []; }
-            
-            acc[subnet].push(data);
-
-            return acc;
-        }, {} as { [key: string]: FirewallData[] });
-    
-        const mergedData = Object.values(subnetGroups).map(items => mergeData(items));
         const dimensions = ["DateTime", "SourceIP", "DestinationPort", "DestinationIP"]
             .concat(mgData.length > 0 && 'Direction' in mgData[0] ? ["Direction"] : []);
+        
+        if (!enableMasking) {
+            generateParallelCoordinatesPlot(mgData, dimensions, width, height);
+            return;
+        }
+
+        const subnetGroups = mgData.reduce((acc, data) => {
+            const subnet = getSubnet(data.SourceIP);
+            if (!acc[subnet]) { acc[subnet] = []; }
+            acc[subnet].push(data);
+            return acc;
+        }, {} as { [key: string]: (FirewallData | IDSData)[] });
+    
+        const mergedData = Object.values(subnetGroups).map(items => mergeData(items));
         generateParallelCoordinatesPlot(mergedData, dimensions, width, height);
 
-    }, [mgData, width, height]);
+    }, [mgData, width, height, enableMasking]);
 
     const generateParallelCoordinatesPlot = (
-        data: AggregatedData[],
+        data: (AggregatedData | FirewallData | IDSData)[],
         dimensions: string[],
         width: number,
         height: number
@@ -116,16 +125,20 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
 
         const yScales: { [key: string]: d3.ScaleTime<number, number> | d3.ScalePoint<string> } = {};
 
-        // Create scales for each dimension
         dimensions.forEach(dim => {
             if (dim === "DateTime") {
-                const allDates = data.flatMap(d => [d.DateTime.min, d.DateTime.max]);
+                const allDates = enableMasking
+                    ? data.flatMap(d => [
+                        (d as AggregatedData).DateTime.min,
+                        (d as AggregatedData).DateTime.max
+                    ])
+                    : data.map(d => new Date((d as FirewallData | IDSData).DateTime));
                 yScales[dim] = d3.scaleTime()
                     .domain(d3.extent(allDates) as [Date, Date])
                     .range([height - 50, 50]);
             } else {
                 const values = data.flatMap(d => {
-                    const val = d[dim as keyof AggregatedData];
+                    const val = getDimensionValues(d, dim);
                     return Array.isArray(val) ? val : [val];
                 });
                 yScales[dim] = d3.scalePoint()
@@ -135,11 +148,9 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
         });
 
         const g = svg.append("g");
-
-        // Draw lines for each subnet
         const line = d3.line();
+
         data.forEach(d => {
-            // For each combination of values between dimensions
             dimensions.forEach((dim, i) => {
                 if (i < dimensions.length - 1) {
                     const currentValues = getDimensionValues(d, dim);
@@ -156,7 +167,7 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
                                 .attr("d", line)
                                 .style("fill", "none")
                                 .style("stroke", "steelblue")
-                                .style("stroke-width", Math.log(d.count))
+                                .style("stroke-width", enableMasking ? Math.log('count' in d ? d.count : 1) : 1)
                                 .style("opacity", 0.3);
                         });
                     });
@@ -164,7 +175,6 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
             });
         });
 
-        // Draw axes
         dimensions.forEach(dim => {
             const axis = d3.axisLeft(yScales[dim]);
             g.append("g")
@@ -176,37 +186,35 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
                 .text(dim);
         });
 
-        // Add brushing
-        dimensions.forEach(dim => {
-            const brush = d3.brushY()
-                .extent([[xScale(dim)! - 10, 0], [xScale(dim)! + 10, height]])
-                .on("brush end", (event: d3.D3BrushEvent<any>) => {
-                    if (!event.selection) {
-                        // Reset all lines opacity when brush is cleared
-                        svg.selectAll("path").style("opacity", 0.3);
-                        return;
-                    }
-                    
-                    const selection = event.selection as [number, number];
-                    
-                    // Update visual feedback
-                    svg.selectAll("path")
-                        .style("opacity", 0.1) // Dim all lines
-                        .filter((d: any) => {
-                            const values = getDimensionValues(d, dim);
-                            return values.some((val: any) => {
-                                const yVal = yScales[dim](dim === "DateTime" ? new Date(val) : val);
-                                if (yVal === undefined) return false;
-                                return yVal >= selection[0] && yVal <= selection[1];
-                            });
-                        })
-                        .style("opacity", 0.7); // Highlight filtered lines
-                });
-        
-            g.append("g")
-                .attr("class", `brush ${dim}`)
-                .call(brush);
-        });
+        if (enableMasking) {
+            dimensions.forEach(dim => {
+                const brush = d3.brushY()
+                    .extent([[xScale(dim)! - 10, 0], [xScale(dim)! + 10, height]])
+                    .on("brush end", (event: d3.D3BrushEvent<any>) => {
+                        if (!event.selection) {
+                            svg.selectAll("path").style("opacity", 0.3);
+                            return;
+                        }
+                        
+                        const selection = event.selection as [number, number];
+                        
+                        svg.selectAll("path")
+                            .style("opacity", 0.1)
+                            .filter((d: any) => {
+                                const values = getDimensionValues(d, dim);
+                                return values.some((val: any) => {
+                                    const yVal = yScales[dim](dim === "DateTime" ? new Date(val) : val);
+                                    return yVal !== undefined && yVal >= selection[0] && yVal <= selection[1];
+                                });
+                            })
+                            .style("opacity", 0.7);
+                    });
+            
+                g.append("g")
+                    .attr("class", `brush ${dim}`)
+                    .call(brush);
+            });
+        }
     };
 
     return (
