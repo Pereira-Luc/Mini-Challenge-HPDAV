@@ -308,7 +308,7 @@ const applyFirewallFilters = () => {
       />
 
 
-      <DaySelector selectedDay={selectedDay} days={[formatDate(MIN_TIME), formatDate(MAX_TIME)]} onDayChange={handleDayChange} />
+      <DaySelector selectedDay={selectedDay} minTime={MIN_TIME} maxTime={MAX_TIME} onDayChange={handleDayChange} />
 
       <TimeIntervalControls
         startTime={startTime}
@@ -370,10 +370,6 @@ const applyFirewallFilters = () => {
               </div>
             </>
             )}
-
-
-
-
         </div>
       </div>  
     </div>
