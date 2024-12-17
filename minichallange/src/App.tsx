@@ -181,6 +181,30 @@ const applyIDSFilters = () => {
 };
 
 
+const applyFirewallFilters = () => {
+  let filtered = firewallData;
+  const { sourcePort, destinationPort, protocol, ipAddress } = selectedFirewallFilters;
+
+  if (sourcePort)
+    filtered = filtered.filter((item) => String(item.SourcePort) === sourcePort.trim());
+
+  if (destinationPort)
+    filtered = filtered.filter((item) => String(item.DestinationPort) === destinationPort.trim());
+
+  if (protocol)
+    filtered = filtered.filter((item) => item.Protocol === protocol.trim());
+
+  if (ipAddress)
+    filtered = filtered.filter(
+      (item) =>
+        item.SourceIP?.includes(ipAddress.trim()) || item.DestinationIP?.includes(ipAddress.trim())
+    );
+
+  console.log("filtered: " , filtered);
+  setFilteredFirewallData(filtered);
+};
+
+
   // Handle Time Interval Change
   const handleTimeIntervalChange = (direction: "forward" | "backward") => {
     console.log("Changing Time Interval:", direction);
@@ -194,6 +218,23 @@ const applyIDSFilters = () => {
     setStartTime(formatDateToISO(newStart));
     setEndTime(formatDateToISO(new Date(newStart.getTime() + intervalInMs)));
   };
+
+
+  const onFilterChange = (
+    filterType: "ids" | "fw",
+    field: string,
+    value: string | { min: number; max: number }
+  ) => {
+    if (filterType === "ids") {
+      setSelectedIDSFilters((prev) => ({ ...prev, [field]: value }));
+    } else if (filterType === "fw") {
+      setSelectedFirewallFilters((prev) => ({ ...prev, [field]: value }));
+    }
+  };
+  
+  
+
+  
 
   const handleAcceptTime = (acceptedStartTime: string, acceptedEndTime: string) => {
     console.log("Accepted Time Range:", { start: acceptedStartTime, end: acceptedEndTime });
@@ -219,12 +260,16 @@ const applyIDSFilters = () => {
         uniqueFirewallValues={uniqueFirewallValues}
         selectedIDSFilters={selectedIDSFilters}
         selectedFirewallFilters={selectedFirewallFilters}
-        onFilterChange={(field, value) =>
-          setSelectedIDSFilters((prev) => ({ ...prev, [field]: value }))
-        }
-        onApplyFilters={applyIDSFilters}
-
+        onFilterChange={onFilterChange} // Correctly pass this function
+        onApplyFilters={(filters) => {
+          if (filters === selectedIDSFilters) {
+            applyIDSFilters();
+          } else if (filters === selectedFirewallFilters) {
+            applyFirewallFilters();
+          }
+        }}
       />
+
 
       <DaySelector selectedDay={selectedDay} days={[formatDate(MIN_TIME), formatDate(MAX_TIME)]} onDayChange={handleDayChange} />
 
