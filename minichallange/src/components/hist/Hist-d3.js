@@ -18,6 +18,8 @@ class HistD3 {
     circleRadius = 1;
     xScale;
     yScale;
+    selectedAttribute=""
+    yAttribute="Count"
 
 
     constructor(el){
@@ -50,12 +52,13 @@ class HistD3 {
             .attr("height", this.height + this.margin.top + this.margin.bottom)
             .append("g")
             .attr("class","matSvgG")
-            .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+            .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")")
         ;
 
+        
         this.xScale = d3.scaleBand().range([0,this.width]);
         this.yScale = d3.scaleLinear().range([this.height,0]);
-
+        
         // build xAxisG
         this.matSvg.append("g")
             .attr("class","xAxisG")
@@ -64,9 +67,26 @@ class HistD3 {
         this.matSvg.append("g")
             .attr("class","yAxisG")
         ;
-        
+        console.log("height: ", this.height);
 
     }
+
+    zoom = function(svg,w,h,x,selectedAttr) {
+        const extent = [[0, 0], [w, h]];
+    
+        svg.call(d3.zoom()
+            .scaleExtent([1, 64])
+            .translateExtent(extent)
+            .extent(extent)
+            .on("zoom", zoomed));
+    
+        function zoomed(event) {
+            console.log("xxx: ", x)
+          x.range([0,w].map(d => event.transform.applyX(d)));
+          svg.selectAll(".barRect").attr("x", d => x(d[selectedAttr])).attr("width", x.bandwidth());
+          svg.selectAll(".xAxisG").call(d3.axisBottom(x));
+        }
+      }
 
     updateAxis = function(visData,xAttribute,yAttribute,allAtributes){
         // const minX = d3.min(visData.map(item=>item[xAttribute]));
@@ -79,6 +99,9 @@ class HistD3 {
         // this.yScale.domain([0, maxY]);
         this.yScale.domain([minY, maxY]);
 
+    }
+
+    updateTextAxis = function(visData,xAttribute,yAttribute,allAtributes){
         this.matSvg.select(".xAxisG")
         .call(d3.axisBottom(this.xScale))
             .selectAll("text")
@@ -88,10 +111,13 @@ class HistD3 {
             // .attr("dy", "20")
             .attr("transform", " translate(-10) rotate(-65)" );
 
-
+        this.matSvg.select(".xAxisG")
+        .call(d3.axisBottom(this.xScale))
+            .selectAll(".axisText").remove("*");
 
         this.matSvg.select(".xAxisG")
             .call(g => g.append("text")
+                .attr("class", "axisText")
                 .attr("x", this.width - this.margin.right)
                 .attr("y", -4)
                 .attr("text-anchor", "end")
@@ -108,47 +134,66 @@ class HistD3 {
                 .text(yAttribute))
             .transition().duration(this.transitionDuration)
             .call(d3.axisLeft(this.yScale))
+            .call(g => g.select(".domain").remove());
         ;
 
-        if(!(allAtributes === undefined || allAtributes.length == 0))
-        {            
-            this.matSel
-            .selectAll("option")
-            .data(allAtributes)
-            .enter()
-            .append("option")
-            .text(function(d) {
-                return d;
-              })
-              .attr("value", function(d) {
-                return d;
-              });
-            
-        }
     }
 
 
-    renderHist = function (visData, xAttribute, yAttribute, allAtributes, controllerMethods){
+
+    renderHist = function (visData, allAtributes, controllerMethods){
         // build the size scale from the data
         // const minVal =
         // const maxValo =
         // this.scale1.domain([minVal, maxVal])
         // console.log(visData);
-        this.updateAxis(visData,xAttribute,yAttribute, allAtributes);
-
+        
+        if(!(allAtributes === undefined || allAtributes.length == 0))
+            {            
+                this.matSel
+                .selectAll("option")
+                .data(allAtributes)
+                .enter()
+                .append("option")
+                .text(function(d) {
+                    return d;
+                  })
+                  .attr("value", function(d) {
+                    return d;
+                  });
+                
+            }
+    
+        
         d3.select(this.el)
         .select(".dd")
         .on("change", (event,itemData)=>{
-            controllerMethods.handleOnChangeOfSelection(d3.select(this.el).select(".dd").property("value"));
+            // controllerMethods.handleOnChangeOfSelection(d3.select(this.el).select(".dd").property("value"));
+            this.selectedAttribute = d3.select(this.el).select(".dd").property("value");
             console.log("event: ", event, "itemData: ", itemData, "prop: ", d3.select(this.el).select(".dd").property("value"));
+            this.renderHist(visData,allAtributes,controllerMethods);
             
         })
+        
+        if(this.selectedAttribute=="") {return;}
+
+        const ara = visData.map( x => { return x[this.selectedAttribute]; }).sort();
+        const counts = {};
+        for (const num of ara) {
+            counts[num] = counts[num] ? counts[num] + 1 : 1;
+        }
+        var result = Object.entries(counts);
+        result = Object.fromEntries(result);
+        var visDataN = Object.entries(result).map(([key, value]) => ({[this.selectedAttribute] : key, Count : value}));
+        console.log(visDataN);
 
         
+        this.updateAxis(visDataN,this.selectedAttribute,this.yAttribute, allAtributes);
+        this.updateTextAxis(visDataN,this.selectedAttribute,this.yAttribute, allAtributes);
 
         this.matSvg.selectAll(".barG")
             // all elements with the class .cellG (empty the first time)
-            .data(visData,(itemData)=>itemData.xAttribute)
+            .data(visDataN,(itemData)=>itemData[this.selectedAttribute])
             .join(
                 enter=>{
                     // all data items to add:
@@ -164,9 +209,9 @@ class HistD3 {
                         // .attr("r",this.circleRadius)
                         // .attr("stroke","steelblue")
                         .attr("fill", "steelblue")
-                        .attr("x", (d) => this.xScale(d[xAttribute]))
-                        .attr("y", (d) => this.yScale(d[yAttribute]))
-                        .attr("height", (d) => this.yScale(0) - this.yScale(d[yAttribute]))
+                        .attr("x", (d) => this.xScale(d[this.selectedAttribute]))
+                        .attr("y", (d) => this.yScale(d[this.yAttribute]))
+                        .attr("height", (d) => this.yScale(0) - this.yScale(d[this.yAttribute]))
                         .attr("width", this.xScale.bandwidth())
 
                     ;
@@ -174,9 +219,9 @@ class HistD3 {
                 update=>{
                     console.log("update: ", update);
                     update.select(".barRect")
-                    .attr("x", (d) => this.xScale(d[xAttribute]))
-                    .attr("y", (d) => this.yScale(d[yAttribute]))
-                    .attr("height", (d) => this.yScale(0) - this.yScale(d[yAttribute]))
+                    .attr("x", (d) => this.xScale(d[this.selectedAttribute]))
+                    .attr("y", (d) => this.yScale(d[this.yAttribute]))
+                    .attr("height", (d) => this.yScale(0) - this.yScale(d[this.yAttribute]))
                     .attr("width", this.xScale.bandwidth())
                     ;
                 },
@@ -186,6 +231,10 @@ class HistD3 {
                 }
 
             )
+
+            this.matSvg.call(this.zoom, this.width, this.height, this.xScale, this.selectedAttribute);
+            this.matSvg.select(".xAxisG").raise();
+            this.matSvg.select(".yAxisG").raise();
     
     }
 

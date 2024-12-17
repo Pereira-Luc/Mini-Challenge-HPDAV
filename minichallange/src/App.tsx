@@ -15,11 +15,15 @@ import TrafficFlowVisualizationIDS from "./components/TrafficFlowVisualizationID
 import TrafficFlowVisualizationFirewall from "./components/TrafficFlowVisualizationFirewall"
 import CategorySelector from "./components/CategorySelector";
 
+import HistContainerFirewall from "./components/hist/HistContainerFirewall"
+import HistContainerIDS from "./components/hist/HistContainerIDS"
+
 import { fetchAllCategoryData } from "./util/fetchers";
 
 enum GraphType {
   ParallelCoordinatesPlot = "ParallelCoordinatesPlot",
   TraficFlow = "TraficFlow",
+  HistContainer = "HistContainer",
 }
 
 
@@ -279,6 +283,7 @@ const applyIDSFilters = () => {
         >
           <option value={GraphType.ParallelCoordinatesPlot}>Parallel Coordinates</option>
           <option value={GraphType.TraficFlow}>Traffic Flow</option>
+          <option value={GraphType.HistContainer}>Bar Chart</option>
         </select>
         <label>
           <input 
@@ -294,13 +299,13 @@ const applyIDSFilters = () => {
         <div className="container">
           {displayedGraph === GraphType.ParallelCoordinatesPlot ? (
             <>
-              <div className="child">
-                <ParallelCoordinatesPlot width={800} height={1280} timeWindow={timeWindow} mgData={filteredIDSData} enableMasking={ enableMasking } />
-              </div>
-              <div className="child">
-                <ParallelCoordinatesPlot width={800} height={1280} timeWindow={timeWindow} mgData={filteredFirewallData} enableMasking={ enableMasking } />
-              </div>
-            </>
+            <div className="child">
+              <ParallelCoordinatesPlot width={800} height={1280} timeWindow={timeWindow} mgData={filteredIDSData} enableMasking={ enableMasking } />
+            </div>
+            <div className="child">
+              <ParallelCoordinatesPlot width={800} height={1280} timeWindow={timeWindow} mgData={filteredFirewallData} enableMasking={ enableMasking } />
+            </div>
+          </>
           ) : (
               <>
             <div className="child">
@@ -312,6 +317,24 @@ const applyIDSFilters = () => {
             </div>
             </>
           )}
+
+
+
+            {/* if displayedGraph === GraphType.HistContainer */}
+            
+            {/* <>
+              <div className="child">
+                <HistContainerIDS data={filteredIDSData} filter={null}/>
+              </div>
+                
+              <div className="child">
+                <HistContainerFirewall data={filteredFirewallData} filter={null}/>
+              </div>
+              </> */}
+
+
+
+
         </div>
       </div>  
     </div>
