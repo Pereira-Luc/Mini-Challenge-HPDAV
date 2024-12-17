@@ -297,7 +297,7 @@ const applyFirewallFilters = () => {
         uniqueFirewallValues={uniqueFirewallValues}
         selectedIDSFilters={selectedIDSFilters}
         selectedFirewallFilters={selectedFirewallFilters}
-        onFilterChange={onFilterChange} // Correctly pass this function
+        onFilterChange={onFilterChange} 
         onApplyFilters={(filters) => {
           if (filters === selectedIDSFilters) {
             applyIDSFilters();
@@ -342,40 +342,34 @@ const applyFirewallFilters = () => {
         <CategorySelector selectedCategory={selectedCategory} onCategoryChange={setSelectedCategory} />
 
         <div className="container">
-          {displayedGraph === GraphType.ParallelCoordinatesPlot ? (
+            {displayedGraph === GraphType.ParallelCoordinatesPlot ? (
             <>
-            <div className="child">
-              <ParallelCoordinatesPlot width={800} height={1280} timeWindow={timeWindow} mgData={filteredIDSData} enableMasking={ enableMasking } />
-            </div>
-            <div className="child">
-              <ParallelCoordinatesPlot width={800} height={1280} timeWindow={timeWindow} mgData={filteredFirewallData} enableMasking={ enableMasking } />
-            </div>
-          </>
-          ) : (
-              <>
-            <div className="child">
-              <TrafficFlowVisualizationIDS data={filteredIDSData} filter={null}/>
-            </div>
-              
-            <div className="child">
-              <TrafficFlowVisualizationFirewall data={filteredFirewallData} filter={null}/>
-            </div>
+              <div className="child">
+              <ParallelCoordinatesPlot width={1280} height={1280} timeWindow={timeWindow} mgData={filteredIDSData} enableMasking={enableMasking} />
+              </div>
+              <div className="child">
+              <ParallelCoordinatesPlot width={1280} height={1280} timeWindow={timeWindow} mgData={filteredFirewallData} enableMasking={enableMasking} />
+              </div>
             </>
-          )}
-
-
-
-            {/* if displayedGraph === GraphType.HistContainer */}
-            
-            {/* <>
+            ) : displayedGraph === GraphType.TraficFlow ? (
+            <>
               <div className="child">
-                <HistContainerIDS data={filteredIDSData} filter={null}/>
+              <TrafficFlowVisualizationIDS data={filteredIDSData} filter={null} />
               </div>
-                
               <div className="child">
-                <HistContainerFirewall data={filteredFirewallData} filter={null}/>
+              <TrafficFlowVisualizationFirewall data={filteredFirewallData} filter={null} />
               </div>
-              </> */}
+            </>
+            ) : (
+            <>
+              <div className="child">
+              <HistContainerIDS data={filteredIDSData} filter={null} />
+              </div>
+              <div className="child">
+              <HistContainerFirewall data={filteredFirewallData} filter={null} />
+              </div>
+            </>
+            )}
 
 
 
