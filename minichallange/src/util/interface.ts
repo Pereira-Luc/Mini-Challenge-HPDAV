@@ -82,4 +82,8 @@ export enum IPCategory {
     Anomalies = 'Anomalies'
 }
 
+export interface IPCategoriesResponse {
+    [category: string]: string[] | null;
+}
+
 export type CategoryTrafficSource = 'firewall' | 'ids';
