@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { CategoryTrafficSource, FirewallData, IDSData, IPCategory, MergedData } from './interface';
+import { CategoryTrafficSource, FirewallData, IDSData, IPCategoriesResponse, IPCategory, MergedData } from './interface';
 import { createAsyncThunk } from '@reduxjs/toolkit/react';
 
 // Fetch data template
@@ -209,6 +209,37 @@ export const fetchAllCategoryData = async (
         };
     } catch (error) {
         console.error(`Error fetching all ${category} data:`, error);
+        throw error;
+    }
+};
+
+
+// Add new fetcher function
+export const fetchIPCategories = async (
+    startDateTime?: string,
+    endDateTime?: string,
+    useCache: boolean = true
+): Promise<IPCategoriesResponse> => {
+    try {
+        const baseUrl = 'http://localhost:5000/ipCategories';
+        const params = new URLSearchParams();
+
+        if (startDateTime) params.append('start_datetime', startDateTime);
+        if (endDateTime) params.append('end_datetime', endDateTime);
+        params.append('use_cache', useCache.toString());
+
+        const url = `${baseUrl}${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to fetch IP categories');
+        }
+
+        const data = await response.json();
+        return data as IPCategoriesResponse;
+    } catch (error) {
+        console.error('Error fetching IP categories:', error);
         throw error;
     }
 };
