@@ -1,6 +1,66 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FirewallData, MergedData } from "../util/interface";
+import { FirewallData, IDSData, MergedData } from "../util/interface";
 import LoadingOverlay from "./LoadingOverlay";
+
+// Keep IP utilities
+const ipToInt = (ip: string): number => {
+    return ip.split('.')
+        .reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0);
+};
+
+const intToIp = (int: number): string => {
+    return [
+        (int >>> 24) & 255,
+        (int >>> 16) & 255,
+        (int >>> 8) & 255,
+        int & 255
+    ].join('.');
+};
+
+const getSubnet = (ip: string, mask: number = 24): string => {
+    const ipInt = ipToInt(ip);
+    const maskBits = ~((1 << (32 - mask)) - 1);
+    return intToIp(ipInt & maskBits);
+};
+
+// Keep AggregatedData type
+type AggregatedData = {
+    Protocol: string;
+    subnet: string;
+    count: number;
+    SourceIP: string;
+    DestinationIP: string[];
+    DestinationPort: string[];
+    Direction: string[];
+    DateTime: {
+        min: Date;
+        max: Date;
+    };
+    originalIPs: string[];
+};
+
+
+const mergeData = (items: FirewallData[] | IDSData[]): AggregatedData => {
+    return {
+        subnet: getSubnet(items[0].SourceIP),
+        count: items.length,
+        SourceIP: getSubnet(items[0].SourceIP),
+        DestinationIP: [...new Set(items.map((item) => item.DestinationIP))],
+        DestinationPort: [...new Set(items.map((item) => item.DestinationPort))],
+        Direction: items.every((item) => "Direction" in item)
+            ? [...new Set(items.map((item) => (item as FirewallData).Direction))]
+            : ['N/A'],
+        DateTime: {
+            min: new Date(Math.min(...items.map((item) => new Date(item.DateTime).getTime()))),
+            max: new Date(Math.max(...items.map((item) => new Date(item.DateTime).getTime())))
+        },
+        originalIPs: items.map((item) => item.SourceIP),
+        Protocol: items.every((item) => "Protocol" in item)
+            ? (items[0] as FirewallData).Protocol
+            : 'Unknown' // Default value if Protocol doesn't exist
+    };
+};
+
 
 interface SimulationNode {
     x: number;
@@ -61,13 +121,35 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         if (!ctx) return;
 
         setLoading(true);
+
         setProgress(0);
 
-        const linksData: SimulationLink[] = data.map((d) => ({
-            source: d.SourceIP,
-            target: d.DestinationIP,
-            protocol: d.Protocol || "TCP",
-        }));
+        if (!data) return;
+
+        // Group by subnet and merge
+        const subnetGroups = data.reduce((acc, data) => {
+            const subnet = getSubnet(data.SourceIP);
+
+            if (!acc[subnet]) { acc[subnet] = []; }
+            
+            acc[subnet].push(data);
+
+            return acc;
+        }, {} as { [key: string]: FirewallData[] });
+    
+        const mergedData = Object.values(subnetGroups).map(items => mergeData(items));
+        const dimensions = ["DateTime", "SourceIP", "DestinationPort", "DestinationIP"]
+            .concat(data.length > 0 && 'Direction' in data[0] ? ["Direction"] : []);
+
+        const linksData: SimulationLink[] = mergedData.flatMap((d) =>
+            d.DestinationIP.map((destIP) => ({
+                source: d.SourceIP,
+                target: destIP, // Convert from array to single string
+                protocol: d.Protocol,
+            }))
+        );
+        
+        
 
         const nodeDegree: { [key: string]: number } = {};
         linksData.forEach((link) => {
@@ -76,16 +158,18 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationProps> = ({ dat
         });
 
         const nodesData: SimulationNode[] = Array.from(
-            new Set(data.flatMap((d) => [d.SourceIP, d.DestinationIP]))
+            new Set(mergedData.flatMap((d) => [d.SourceIP, ...d.DestinationIP])) // Flatten DestinationIP
         ).map((id) => {
-            const originalData = data.find((d) => d.SourceIP === id || d.DestinationIP === id); // Find data for node
+            if (typeof id !== "string") return null; // Filter out invalid IDs
             return {
                 id,
                 degree: nodeDegree[id] || 0,
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
             };
-        });
+        }).filter((node): node is SimulationNode => node !== null); // Remove null entries
+        
+        
 
         setNodes(nodesData);
         setLinks(linksData);

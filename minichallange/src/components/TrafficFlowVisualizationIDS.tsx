@@ -35,14 +35,23 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationIDSProps> = ({ 
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(0);
     const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
- 
+    const usedHues: number[] = [];
+    const MIN_HUE_DISTANCE = 30; // Minimum distance between hues to consider them "not close"
+    let hoveredLink: SimulationLink | null = null; // Explicitly typed
     const getRandomRainbowColor = () => {
-        const hue = Math.floor(Math.random() * 360); // Random hue between 0 and 360
+        let hue: number;
+        let isClose;
+    
+        do {
+            hue = Math.floor(Math.random() * 360); // Random hue between 0 and 360
+            isClose = usedHues.some((usedHue) => Math.abs(usedHue - hue) < MIN_HUE_DISTANCE);
+        } while (isClose);
+    
+        usedHues.push(hue); // Store the hue
         const saturation = 100; // Full saturation for vibrant colors
-        const lightness = 50; // Medium lightness for balanced brightness
+        const lightness = 50;   // Medium lightness for balanced brightness
         return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     };
-    
     
     const labelColorMapRef = useRef<{ [key: string]: string }>({});
 
@@ -52,6 +61,40 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationIDSProps> = ({ 
         }
         return labelColorMapRef.current[label];
     };
+    
+
+    function pointToSegmentDistance(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+    
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        let param = -1;
+    
+        if (len_sq !== 0) {
+            param = dot / len_sq;
+        }
+    
+        let xx, yy;
+    
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+    
+        const dx = px - xx;
+        const dy = py - yy;
+    
+        return Math.sqrt(dx * dx + dy * dy);
+    }
     
     
 
@@ -148,8 +191,7 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationIDSProps> = ({ 
     useEffect(() => {
         // Existing worker logic here
     }, [memoizedData]);
-
-
+    
     const renderCanvas = (
         ctx: CanvasRenderingContext2D,
         nodes: SimulationNode[],
@@ -158,54 +200,116 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationIDSProps> = ({ 
     ) => {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     
+        const hoverThreshold = 10; // Hover distance
+        const hoveredLabels: Set<string> = new Set(); // Ensure distinct labels
+        const hoveredLinks: { label: string; absX: number; absY: number }[] = []; // Store label positions
+    
+        // Apply zoom/translate transformations for links and nodes
         ctx.save();
         ctx.setTransform(scale, 0, 0, scale, translate.x, translate.y);
     
-        // Draw links
+        // Draw links and detect hover
         links.forEach((link) => {
             const source = nodes.find((node) => node.id === link.source);
             const target = nodes.find((node) => node.id === link.target);
+    
             if (source && target) {
                 ctx.beginPath();
                 ctx.moveTo(source.x, source.y);
                 ctx.lineTo(target.x, target.y);
-                ctx.lineWidth = 0.5;
-                ctx.strokeStyle = getColorForLabel(link.label); // Dynamically assign color
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = getColorForLabel(link.label);
                 ctx.stroke();
+    
+                // Detect hover (cursor in absolute position)
+                const distance = pointToSegmentDistance(
+                    (cursor.x - translate.x) / scale,
+                    (cursor.y - translate.y) / scale,
+                    source.x,
+                    source.y,
+                    target.x,
+                    target.y
+                );
+    
+                if (distance < hoverThreshold && !hoveredLabels.has(link.label)) {
+                    const absX = (source.x + target.x) / 2 * scale + translate.x; // Absolute X position
+                    const absY = (source.y + target.y) / 2 * scale + translate.y; // Absolute Y position
+                    hoveredLabels.add(link.label);
+                    hoveredLinks.push({ label: link.label, absX, absY });
+                }
             }
         });
+
+        // Draw links and detect hover
+        links.forEach((link) => {
+            const source = nodes.find((node) => node.id === link.source);
+            const target = nodes.find((node) => node.id === link.target);
+
+            if (source && target) {
+                const colors = Array.isArray(link.label)
+                    ? link.label.map((lbl) => getColorForLabel(lbl))
+                    : [getColorForLabel(link.label)]; // Ensure label can handle arrays
+                
+                const totalSegments = colors.length;
+
+                for (let i = 0; i < totalSegments; i++) {
+                    ctx.beginPath();
+                    const segmentStartX = source.x + (i / totalSegments) * (target.x - source.x);
+                    const segmentStartY = source.y + (i / totalSegments) * (target.y - source.y);
+                    const segmentEndX = source.x + ((i + 1) / totalSegments) * (target.x - source.x);
+                    const segmentEndY = source.y + ((i + 1) / totalSegments) * (target.y - source.y);
+
+                    ctx.moveTo(segmentStartX, segmentStartY);
+                    ctx.lineTo(segmentEndX, segmentEndY);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = colors[i];
+                    ctx.stroke();
+                }
+            }
+        });
+
     
         // Draw nodes
+        // Always display node IP addresses
         nodes.forEach((node) => {
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, Math.min(2, node.degree * 0.2 + 1), 0, Math.PI * 2);
-            ctx.fillStyle = node.degree > 10 ? "#0073e6" : "#b3d9ff";
-            ctx.fill();
-            ctx.closePath();
-    
-            // Always show labels for high-degree nodes
-            if (node.degree > 10) {
-                ctx.font = "10px Arial";
-                ctx.fillStyle = "blue";
-                ctx.fillText(node.id, node.x + 5, node.y - 5);
-            }
+            const textX = node.x; // Position based on node coordinates
+            const textY = node.y - 10; // Position slightly above the node
+        
+            ctx.font = "10px Arial";
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+            ctx.fillText(node.id, textX, textY);
         });
+        
+
+        ctx.restore(); // Reset transformation for text rendering
     
-        // Highlight node if cursor is close
-        nodes.forEach((node) => {
-            const distance = Math.hypot(
-                (cursor.x - translate.x) / scale - node.x,
-                (cursor.y - translate.y) / scale - node.y
-            );
-            if (distance < 20 && node.degree <= 10) {
-                ctx.font = "10px Arial";
-                ctx.fillStyle = "black";
-                ctx.fillText(node.id, node.x + 5, node.y - 5);
-            }
+        // Draw labels in absolute positions (outside of zoom/translate context)
+        const labelSpacing = 18;
+        let currentYOffset = 0;
+    
+        hoveredLinks.forEach(({ label, absX, absY }) => {
+            // Adjust Y-position for vertical stacking
+            const textX = absX;
+            const textY = absY + currentYOffset;
+    
+            const textWidth = ctx.measureText(label).width;
+    
+            // White background for clarity
+            ctx.fillStyle = "white";
+            ctx.fillRect(textX - 3, textY - 12, textWidth + 6, 14);
+    
+            // Draw the label text
+            ctx.font = "12px Arial";
+            ctx.fillStyle = getColorForLabel(label);
+            ctx.fillText(label, textX, textY);
+    
+            currentYOffset += labelSpacing; // Vertical spacing between labels
         });
-    
-        ctx.restore();
     };
+    
+    
+    
     
     useEffect(() => {
         const canvas = canvasRef.current;
