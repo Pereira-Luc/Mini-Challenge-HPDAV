@@ -239,16 +239,49 @@ const TrafficFlowVisualization: React.FC<TrafficFlowVisualizationIDSProps> = ({ 
                 }
             }
         });
+
+        // Draw links and detect hover
+        links.forEach((link) => {
+            const source = nodes.find((node) => node.id === link.source);
+            const target = nodes.find((node) => node.id === link.target);
+
+            if (source && target) {
+                const colors = Array.isArray(link.label)
+                    ? link.label.map((lbl) => getColorForLabel(lbl))
+                    : [getColorForLabel(link.label)]; // Ensure label can handle arrays
+                
+                const totalSegments = colors.length;
+
+                for (let i = 0; i < totalSegments; i++) {
+                    ctx.beginPath();
+                    const segmentStartX = source.x + (i / totalSegments) * (target.x - source.x);
+                    const segmentStartY = source.y + (i / totalSegments) * (target.y - source.y);
+                    const segmentEndX = source.x + ((i + 1) / totalSegments) * (target.x - source.x);
+                    const segmentEndY = source.y + ((i + 1) / totalSegments) * (target.y - source.y);
+
+                    ctx.moveTo(segmentStartX, segmentStartY);
+                    ctx.lineTo(segmentEndX, segmentEndY);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = colors[i];
+                    ctx.stroke();
+                }
+            }
+        });
+
     
         // Draw nodes
+        // Always display node IP addresses
         nodes.forEach((node) => {
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, Math.min(2, node.degree * 0.2 + 1), 0, Math.PI * 2);
-            ctx.fillStyle = node.degree > 10 ? "#0073e6" : "#b3d9ff";
-            ctx.fill();
-            ctx.closePath();
+            const textX = node.x; // Position based on node coordinates
+            const textY = node.y - 10; // Position slightly above the node
+        
+            ctx.font = "10px Arial";
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+            ctx.fillText(node.id, textX, textY);
         });
-    
+        
+
         ctx.restore(); // Reset transformation for text rendering
     
         // Draw labels in absolute positions (outside of zoom/translate context)
