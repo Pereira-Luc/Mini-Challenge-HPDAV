@@ -295,10 +295,10 @@ const applyIDSFilters = () => {
           {displayedGraph === GraphType.ParallelCoordinatesPlot ? (
             <>
               <div className="child">
-                <ParallelCoordinatesPlot width={800} height={400} timeWindow={timeWindow} mgData={filteredIDSData} enableMasking={ enableMasking } />
+                <ParallelCoordinatesPlot width={800} height={1280} timeWindow={timeWindow} mgData={filteredIDSData} enableMasking={ enableMasking } />
               </div>
               <div className="child">
-                <ParallelCoordinatesPlot width={800} height={400} timeWindow={timeWindow} mgData={filteredFirewallData} enableMasking={ enableMasking } />
+                <ParallelCoordinatesPlot width={800} height={1280} timeWindow={timeWindow} mgData={filteredFirewallData} enableMasking={ enableMasking } />
               </div>
             </>
           ) : (
